@@ -376,40 +376,59 @@
       let rawAnswer = (data.text || "Non sono riuscito a elaborare una risposta.").trim();
 
       // ====================================================
-      // GESTIONE DEI LINK POTENZIATA (Markdown + URL Grezzi)
+      // GESTIONE DEI LINK (Versione Ultra-Flessibile)
       // ====================================================
-      const regexMarkdown = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
-      const regexRawUrl = /(?<!href="|['"])(https?:\/\/[^\s<]+)/g;
-
-      // 1. Raccoglie tutti i link (sia markdown che grezzi) per l'apertura automatica
-      let linksTrovati = [];
-      let matchMd;
-      while ((matchMd = regexMarkdown.exec(rawAnswer)) !== null) {
-          linksTrovati.push(matchMd[2]);
-      }
-      let matchRaw;
-      while ((matchRaw = regexRawUrl.exec(rawAnswer)) !== null) {
-          if (!linksTrovati.includes(matchRaw[1])) {
-              linksTrovati.push(matchRaw[1]);
-          }
-      }
-
-      // Apre le pagine in nuove schede
-      linksTrovati.forEach(url => window.open(url, '_blank'));
-
-      // 2. Converte i link in HTML cliccabile (pulsanti olografici)
-      let htmlAnswer = rawAnswer
-          .replace(regexMarkdown, '<a href="$2" target="_blank" class="jarvis-link">$1</a>')
-          .replace(regexRawUrl, '<a href="$1" target="_blank" class="jarvis-link">$1</a>');
+      // Questa regex è molto più tollerante agli spazi e ai caratteri speciali
+      const regexMarkdown = /\[([^\]]+)\]\s*\(\s*(https?:\/\/[^\s\)]+)\s*\)/g;
       
-      htmlAnswer = htmlAnswer.replace(/\n/g, '<br>');
+      let htmlAnswer = rawAnswer;
+      let speechAnswer = rawAnswer;
+      let linksToOpen = [];
 
-      // 3. Pulisce il testo per la sintesi vocale (rimuove i link e gli URL dalla voce)
-      let speechAnswer = rawAnswer.replace(regexMarkdown, "$1").replace(regexRawUrl, "");
+      // 1. Processiamo i link Markdown
+      let match;
+      while ((match = regexMarkdown.exec(rawAnswer)) !== null) {
+          let text = match[1];
+          let url = match[2];
+          
+          linksToOpen.push(url);
+          
+          // Sostituisce nel testo HTML
+          htmlAnswer = htmlAnswer.replace(match[0], `<a href="${url}" target="_blank" class="jarvis-link">${text}</a>`);
+          // Rimuove l'URL per la pronuncia
+          speechAnswer = speechAnswer.replace(match[0], text);
+      }
+
+      // 2. Processiamo gli URL grezzi rimasti (che non sono dentro un tag <a>)
+      // Cerca http o https seguiti da caratteri, fermandosi a spazi o parentesi
+      const regexRawUrl = /(?<!href="|'|>)(https?:\/\/[^\s\)<>]+)/g;
+      while ((match = regexRawUrl.exec(htmlAnswer)) !== null) {
+          let url = match[1];
+          // Pulisci l'URL da eventuale punteggiatura finale
+          url = url.replace(/[\.,;:!]+$/, '');
+          
+          if (!linksToOpen.includes(url)) {
+              linksToOpen.push(url);
+          }
+          
+          htmlAnswer = htmlAnswer.replace(match[1], `<a href="${url}" target="_blank" class="jarvis-link">${url}</a>`);
+          speechAnswer = speechAnswer.replace(match[1], ""); // Non pronunciare gli url nudi
+      }
+
+      // Converti i ritorni a capo in <br>
+      htmlAnswer = htmlAnswer.replace(/\n/g, '<br>');
+      
+      // Pulisci asterischi markdown per la voce
       speechAnswer = speechAnswer.replace(/\*/g, "").trim();
 
-      // Mostra a schermo e parla
+      // 3. Esegui le azioni
+      // Apri i tab
+      linksToOpen.forEach(url => window.open(url, '_blank'));
+      
+      // Mostra in chat (usando isHTML = true)
       addLogEntry("jarvis", htmlAnswer, true);
+      
+      // Parla
       speak(speechAnswer);
 
     } catch (e) {
