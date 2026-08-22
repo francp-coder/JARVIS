@@ -156,6 +156,16 @@
   .entry { margin-bottom: 16px; }
   .entry-role { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; margin-bottom: 4px; }
   .entry-text { font-size: 16px; line-height: 1.5; color: var(--text); font-weight: 500; }
+  .entry-text a.jarvis-link {
+    display: inline-block; margin-top: 8px; margin-right: 8px;
+    background: rgba(79,195,247,0.12); border: 1px solid var(--cyan);
+    color: var(--cyan-bright); text-decoration: none; padding: 7px 14px;
+    border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    letter-spacing: 0.03em; transition: all 0.2s;
+  }
+  .entry-text a.jarvis-link:hover { background: rgba(79,195,247,0.25); }
+  .entry-text a.jarvis-link::before { content: "↗ "; }
+  .popup-note { display: block; margin-top: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--amber); }
 
   form { width: 100%; max-width: 580px; display: flex; gap: 8px; }
   input[type=text] {
@@ -237,7 +247,7 @@
   // =========================================================
   // IMPOSTA QUI L'INDIRIZZO DEL TUO PROXY (Cloudflare Worker)
   // Esempio: "https://jarvis-proxy.tuonome.workers.dev"
-  const WORKER_URL = "https://jarvis-proxy.francesco-32105.workers.dev";
+  const WORKER_URL = "INCOLLA_QUI_IL_TUO_INDIRIZZO_WORKER";
   // =========================================================
 
   const WAKE_PATTERNS = ["ehi jarvis", "hey jarvis", "ok jarvis", "ciao jarvis", "ehi jarvi", "e jarvis"];
