@@ -192,7 +192,6 @@
   <div class="header">
     <h1>J.A.R.V.I.S.</h1>
   </div>
-  <!-- Aggiornato il titolo della versione -->
   <div class="version">SISTEMA VOCALE PERSONALE · DEEPSEEK V3</div>
 
   <div class="status" id="statusLine">
@@ -331,7 +330,6 @@
     els.core.style.background = `radial-gradient(circle at 38% 32%, #FFFFFF 0%, ${color} 35%, #05263A 78%)`;
   }
 
-  // NUOVA LOGICA: Supporto per HTML nel testo (isHTML flag)
   function addLogEntry(role, text, isHTML = false) {
     els.logEmpty.style.display = "none";
     const entry = document.createElement("div");
@@ -356,7 +354,6 @@
     els.log.scrollTop = els.log.scrollHeight;
   }
 
-  // NUOVA LOGICA: Estrazione link e apertura automatica
   async function askJarvis(question) {
     setMode("thinking");
     addLogEntry("user", question);
@@ -379,26 +376,39 @@
       let rawAnswer = (data.text || "Non sono riuscito a elaborare una risposta.").trim();
 
       // ====================================================
-      // GESTIONE DEI LINK MARKDOWN [Testo](URL)
+      // GESTIONE DEI LINK POTENZIATA (Markdown + URL Grezzi)
       // ====================================================
-      const regexLink = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
+      const regexMarkdown = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
+      const regexRawUrl = /(?<!href="|['"])(https?:\/\/[^\s<]+)/g;
 
-      // 1. Apri automaticamente i link in background
-      let linksTrovati = [...rawAnswer.matchAll(regexLink)];
-      linksTrovati.forEach(match => {
-          let url = match[2];
-          window.open(url, '_blank');
-      });
+      // 1. Raccoglie tutti i link (sia markdown che grezzi) per l'apertura automatica
+      let linksTrovati = [];
+      let matchMd;
+      while ((matchMd = regexMarkdown.exec(rawAnswer)) !== null) {
+          linksTrovati.push(matchMd[2]);
+      }
+      let matchRaw;
+      while ((matchRaw = regexRawUrl.exec(rawAnswer)) !== null) {
+          if (!linksTrovati.includes(matchRaw[1])) {
+              linksTrovati.push(matchRaw[1]);
+          }
+      }
 
-      // 2. Formatta il testo per l'interfaccia (trasforma i Markdown in HTML)
-      let htmlAnswer = rawAnswer.replace(regexLink, '<a href="$2" target="_blank" class="jarvis-link">$1</a>');
-      htmlAnswer = htmlAnswer.replace(/\n/g, '<br>'); // Per preservare gli a capo
+      // Apre le pagine in nuove schede
+      linksTrovati.forEach(url => window.open(url, '_blank'));
 
-      // 3. Formatta il testo per la voce (rimuove l'URL e legge solo il titolo)
-      let speechAnswer = rawAnswer.replace(regexLink, "$1");
-      speechAnswer = speechAnswer.replace(/\*/g, ""); // Pulisce eventuali asterischi rimasti
+      // 2. Converte i link in HTML cliccabile (pulsanti olografici)
+      let htmlAnswer = rawAnswer
+          .replace(regexMarkdown, '<a href="$2" target="_blank" class="jarvis-link">$1</a>')
+          .replace(regexRawUrl, '<a href="$1" target="_blank" class="jarvis-link">$1</a>');
+      
+      htmlAnswer = htmlAnswer.replace(/\n/g, '<br>');
 
-      // Manda la versione HTML alla chat, e la versione pulita all'audio
+      // 3. Pulisce il testo per la sintesi vocale (rimuove i link e gli URL dalla voce)
+      let speechAnswer = rawAnswer.replace(regexMarkdown, "$1").replace(regexRawUrl, "");
+      speechAnswer = speechAnswer.replace(/\*/g, "").trim();
+
+      // Mostra a schermo e parla
       addLogEntry("jarvis", htmlAnswer, true);
       speak(speechAnswer);
 
