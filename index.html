@@ -192,7 +192,8 @@
   <div class="header">
     <h1>J.A.R.V.I.S.</h1>
   </div>
-  <div class="version">SISTEMA VOCALE PERSONALE · GEMINI 2.5 FLASH</div>
+  <!-- Aggiornato il titolo della versione -->
+  <div class="version">SISTEMA VOCALE PERSONALE · DEEPSEEK V3</div>
 
   <div class="status" id="statusLine">
     <span class="dot" id="statusDot"></span>
@@ -245,8 +246,7 @@
 
 <script>
   // =========================================================
-  // IMPOSTA QUI L'INDIRIZZO DEL TUO PROXY (Cloudflare Worker)
-  // Esempio: "https://jarvis-proxy.tuonome.workers.dev"
+  // INDIRIZZO DEL TUO PROXY
   const WORKER_URL = "https://jarvis-proxy.francesco-32105.workers.dev";
   // =========================================================
 
@@ -331,7 +331,8 @@
     els.core.style.background = `radial-gradient(circle at 38% 32%, #FFFFFF 0%, ${color} 35%, #05263A 78%)`;
   }
 
-  function addLogEntry(role, text) {
+  // NUOVA LOGICA: Supporto per HTML nel testo (isHTML flag)
+  function addLogEntry(role, text, isHTML = false) {
     els.logEmpty.style.display = "none";
     const entry = document.createElement("div");
     entry.className = "entry";
@@ -339,15 +340,23 @@
     roleEl.className = "entry-role";
     roleEl.style.color = role === "user" ? "#7FE3FF" : "#FFB454";
     roleEl.textContent = role === "user" ? "TU" : "JARVIS";
+    
     const textEl = document.createElement("div");
     textEl.className = "entry-text";
-    textEl.textContent = text;
+    
+    if (isHTML) {
+        textEl.innerHTML = text;
+    } else {
+        textEl.textContent = text;
+    }
+    
     entry.appendChild(roleEl);
     entry.appendChild(textEl);
     els.log.appendChild(entry);
     els.log.scrollTop = els.log.scrollHeight;
   }
 
+  // NUOVA LOGICA: Estrazione link e apertura automatica
   async function askJarvis(question) {
     setMode("thinking");
     addLogEntry("user", question);
@@ -367,9 +376,32 @@
         body: JSON.stringify({ question })
       });
       const data = await response.json();
-      const answer = (data.text || "Non sono riuscito a elaborare una risposta.").trim();
-      addLogEntry("jarvis", answer);
-      speak(answer);
+      let rawAnswer = (data.text || "Non sono riuscito a elaborare una risposta.").trim();
+
+      // ====================================================
+      // GESTIONE DEI LINK MARKDOWN [Testo](URL)
+      // ====================================================
+      const regexLink = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
+
+      // 1. Apri automaticamente i link in background
+      let linksTrovati = [...rawAnswer.matchAll(regexLink)];
+      linksTrovati.forEach(match => {
+          let url = match[2];
+          window.open(url, '_blank');
+      });
+
+      // 2. Formatta il testo per l'interfaccia (trasforma i Markdown in HTML)
+      let htmlAnswer = rawAnswer.replace(regexLink, '<a href="$2" target="_blank" class="jarvis-link">$1</a>');
+      htmlAnswer = htmlAnswer.replace(/\n/g, '<br>'); // Per preservare gli a capo
+
+      // 3. Formatta il testo per la voce (rimuove l'URL e legge solo il titolo)
+      let speechAnswer = rawAnswer.replace(regexLink, "$1");
+      speechAnswer = speechAnswer.replace(/\*/g, ""); // Pulisce eventuali asterischi rimasti
+
+      // Manda la versione HTML alla chat, e la versione pulita all'audio
+      addLogEntry("jarvis", htmlAnswer, true);
+      speak(speechAnswer);
+
     } catch (e) {
       const msg = "Ho avuto un problema a contattare il server. Riprova.";
       addLogEntry("jarvis", msg);
@@ -383,9 +415,11 @@
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "it-IT";
+    
     const voices = window.speechSynthesis.getVoices();
     const itVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith("it"));
     if (itVoice) utter.voice = itVoice;
+    
     utter.onend = () => setMode(mode === "off" ? "off" : "awake");
     utter.onerror = () => setMode(mode === "off" ? "off" : "awake");
     window.speechSynthesis.speak(utter);
