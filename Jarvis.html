@@ -236,8 +236,8 @@
 <script>
   // =========================================================
   // IMPOSTA QUI L'INDIRIZZO DEL TUO PROXY (Cloudflare Worker)
-  // Esempio: "https://jarvis-proxy.tuonome.workers.dev"
-  const WORKER_URL = "jarvis-proxy.francesco-32105.workers.dev";
+  // =========================================================
+  const WORKER_URL = "https://jarvis-proxy.francesco-32105.workers.dev";
   // =========================================================
 
   const WAKE_PATTERNS = ["ehi jarvis", "hey jarvis", "ok jarvis", "ciao jarvis", "ehi jarvi", "e jarvis"];
@@ -338,6 +338,17 @@
     els.log.scrollTop = els.log.scrollHeight;
   }
 
+  function getSavedPassword() {
+    let pass = localStorage.getItem('jarvis_pass');
+    if (!pass) {
+      pass = prompt("Inserisci il codice di accesso per Jarvis:");
+      if (pass) {
+        localStorage.setItem('jarvis_pass', pass);
+      }
+    }
+    return pass;
+  }
+
   async function askJarvis(question) {
     setMode("thinking");
     addLogEntry("user", question);
@@ -350,12 +361,33 @@
       return;
     }
 
+    const pass = getSavedPassword();
+    if (!pass) {
+      const msg = "Accesso negato: codice di sicurezza non inserito.";
+      addLogEntry("jarvis", msg);
+      setMode("off");
+      return;
+    }
+
     try {
       const response = await fetch(WORKER_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Jarvis-Auth": pass
+        },
         body: JSON.stringify({ question })
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem('jarvis_pass');
+        const msg = "Codice di sicurezza errato. Ricarica la pagina per riprovare.";
+        addLogEntry("jarvis", msg);
+        speak(msg);
+        setMode("off");
+        return;
+      }
+
       const data = await response.json();
       const answer = (data.text || "Non sono riuscito a elaborare una risposta.").trim();
       addLogEntry("jarvis", answer);
