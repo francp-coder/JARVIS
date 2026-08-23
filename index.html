@@ -962,7 +962,7 @@
     });
   }
 
-  function showReadout(userText, jarvisRawText) {
+  function showReadout(userText, jarvisRawText, preOpenedWindow) {
     els.readoutPlaceholder.style.display = "none";
     els.readoutUser.style.display = "block";
     els.readoutUser.textContent = userText;
@@ -990,17 +990,28 @@
       }
     });
     if (links.length > 0) {
-      const ok = tryOpenLink(links[0]);
+      let ok = false;
+      // Se abbiamo una scheda già aperta in risposta diretta al click
+      // dell'utente (invio manuale), il browser la considera "attivata
+      // dall'utente" e non la blocca: la reindirizziamo verso il link.
+      if (preOpenedWindow && !preOpenedWindow.closed) {
+        try { preOpenedWindow.location.href = links[0]; ok = true; } catch (e) { ok = false; }
+      } else {
+        ok = tryOpenLink(links[0]);
+      }
       if (!ok) {
         const note = document.createElement("span");
         note.className = "popup-note";
         note.textContent = "Il browser ha bloccato l'apertura automatica — usa il pulsante qui sopra.";
         els.readoutJarvis.appendChild(note);
       }
+    } else if (preOpenedWindow && !preOpenedWindow.closed) {
+      // Nessun link nella risposta: chiudiamo la scheda vuota aperta preventivamente.
+      try { preOpenedWindow.close(); } catch (e) {}
     }
   }
 
-  async function askJarvis(question) {
+  async function askJarvis(question, preOpenedWindow) {
     setMode("thinking");
     pushHistory("user", question);
     els.interimText.textContent = "";
@@ -1008,7 +1019,7 @@
 
     if (!WORKER_URL || WORKER_URL.indexOf("INCOLLA_QUI") !== -1) {
       const msg = "Non ho ancora un indirizzo del server configurato. Segui le istruzioni per impostare WORKER_URL.";
-      showReadout(question, msg);
+      showReadout(question, msg, preOpenedWindow);
       pushHistory("jarvis", msg);
       speak(msg);
       return;
@@ -1024,13 +1035,13 @@
       const data = await response.json();
       els.statLatency.textContent = Math.round(performance.now() - t0) + " ms";
       const answer = (data.text || "Non sono riuscito a elaborare una risposta.").trim();
-      showReadout(question, answer);
+      showReadout(question, answer, preOpenedWindow);
       pushHistory("jarvis", answer);
       const { spokenText } = extractAndRenderLinks(answer);
       speak(spokenText || answer);
     } catch (e) {
       const msg = "Ho avuto un problema a contattare il server. Riprova.";
-      showReadout(question, msg);
+      showReadout(question, msg, preOpenedWindow);
       pushHistory("jarvis", msg);
       speak(msg);
     }
@@ -1057,7 +1068,7 @@
     setTimeout(() => {
       const utter = new SpeechSynthesisUtterance(text);
       utter.lang = "it-IT";
-      utter.rate = 1.85;
+      utter.rate = 1.92;
       utter.pitch = 1.22;
 
       if (!cachedVoice) {
@@ -1310,7 +1321,12 @@
     e.preventDefault();
     const val = els.manualInput.value.trim();
     if (!val) return;
-    askJarvis(val);
+    // Apriamo subito una scheda vuota: essendo una diretta conseguenza del
+    // click dell'utente, Chrome non la considera un pop-up e non la blocca.
+    // La riempiremo con il link, se la risposta ne conterrà uno.
+    let preWin = null;
+    try { preWin = window.open('', '_blank'); } catch (e) {}
+    askJarvis(val, preWin);
     els.manualInput.value = "";
   });
 
