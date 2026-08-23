@@ -251,7 +251,8 @@
   const WORKER_URL = "https://jarvis-proxy.francesco-32105.workers.dev";
   // =========================================================
 
-  const WAKE_PATTERNS = ["ehi jarvis", "hey jarvis", "ok jarvis", "ciao jarvis", "ehi jarvi", "e jarvis"];
+  // Aggiunto "jarvis" semplice ai pattern per rendere il riconoscimento più flessibile e pronto
+  const WAKE_PATTERNS = ["ehi jarvis", "hey jarvis", "ok jarvis", "ciao jarvis", "ehi jarvi", "e jarvis", "jarvis"];
   const COLORS = { awake: "#4FC3F7", capturing: "#7FE3FF", thinking: "#FFB454", speaking: "#7FE3FF", error: "#FF6B6B", off: "#1C4A63" };
   const STATUS_TEXT = {
     off: "Spento", awake: 'In ascolto — di\' "Ehi Jarvis"', capturing: "Ti ascolto...",
@@ -491,7 +492,9 @@
     setTimeout(() => {
       const utter = new SpeechSynthesisUtterance(text);
       utter.lang = "it-IT";
-      utter.rate = 1.52;
+      
+      // IMPOSTAZIONI VELOCITÀ E TONO RICHIESTE
+      utter.rate = 1.92;
       utter.pitch = 1.22;
 
       if (!cachedVoice) {
@@ -563,7 +566,9 @@
     };
 
     r.onerror = (event) => {
-      if (event.error === "no-speech" || event.error === "aborted") return;
+      // Ignoriamo gli errori di "silenzio" o connessione momentanea per evitare blocchi
+      if (event.error === "no-speech" || event.error === "network") return; 
+      
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
         els.errorBanner.textContent = "Accesso al microfono negato. Consenti l'uso del microfono per usare Jarvis.";
         els.errorBanner.style.display = "block";
@@ -572,8 +577,11 @@
     };
 
     r.onend = () => {
+      // RIAVVIO INTELLIGENTE: aggiunta una pausa per non far crashare Chrome
       if (mode !== "off" && mode !== "error") {
-        try { r.start(); } catch (e) {}
+        setTimeout(() => {
+            try { r.start(); } catch (e) {}
+        }, 200); 
       }
     };
 
