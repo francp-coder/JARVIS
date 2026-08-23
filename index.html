@@ -220,7 +220,7 @@
   button.pill.primary { background: var(--cyan); color: #01131E; border-color: var(--cyan); box-shadow: 0 0 20px rgba(79,195,247,0.5); }
   button.pill.primary:hover { background: var(--cyan-bright); }
 
-  /* ---------- Readout ---------- */
+  /* ---------- Readout: sostituisce il vecchio riquadro di log ---------- */
   .readout {
     width: 100%; max-width: 620px;
     min-height: 96px;
@@ -250,7 +250,7 @@
     letter-spacing: 0.03em; transition: all 0.2s;
   }
   .readout .jarvis-line a.jarvis-link:hover { background: rgba(79,195,247,0.25); }
-  .readout .jarvis-line a.jarvis-link::before { content: "↗ "; }
+  .readout .jarvis-line a.jarvis-link::before { content: "↗️ "; }
   .popup-note { display: block; margin-top: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--amber); }
   .readout .placeholder { color: var(--muted); font-size: 14px; font-style: italic; }
 
@@ -289,11 +289,118 @@
   }
   .telemetry-cell .t-label b { color: var(--cyan-bright); font-weight: 500; }
   .telemetry-cell canvas { width: 100%; height: 30px; display: block; }
+
+  /* ---------- Griglia esagonale decorativa ---------- */
+  .hexgrid {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.35;
+    background-image: radial-gradient(circle at 1px 1px, rgba(79,195,247,0.18) 1px, transparent 1.4px);
+    background-size: 26px 26px;
+    mask-image: radial-gradient(ellipse at 50% 15%, black 0%, transparent 65%);
+  }
+
+  /* ---------- Testo glitch/flicker per titoli tech ---------- */
+  @keyframes flicker {
+    0%, 92%, 100% { opacity: 1; }
+    93% { opacity: 0.3; }
+    94% { opacity: 1; }
+    95% { opacity: 0.5; }
+    96% { opacity: 1; }
+  }
+  .flicker { animation: flicker 6s infinite; }
+
+  /* ---------- Stack laterali (pannelli multipli in stile cockpit) ---------- */
+  .side-stack {
+    display: none;
+    flex-direction: column; gap: 8px;
+    width: 168px; flex: 0 0 auto;
+  }
+  @media (min-width: 900px) { .side-stack { display: flex; } }
+  .stack-panel {
+    border: 1px solid var(--border); border-radius: 4px; background: var(--panel);
+    backdrop-filter: blur(4px); padding: 8px 10px; position: relative; overflow: hidden;
+  }
+  .stack-panel::before {
+    content: ""; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
+    border-top: 1px solid var(--cyan); border-left: 1px solid var(--cyan);
+  }
+  .stack-panel .sp-title {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.12em;
+    color: var(--cyan-bright); margin-bottom: 6px; display: flex; justify-content: space-between;
+  }
+  .stack-panel .sp-title .blip {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--cyan-bright);
+    box-shadow: 0 0 6px var(--cyan-bright); animation: pulse 1.4s infinite;
+  }
+  .stat-row {
+    display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; color: var(--muted); margin-bottom: 3px; letter-spacing: 0.03em;
+  }
+  .stat-row b { color: var(--text); font-weight: 500; }
+  .bar-track {
+    height: 3px; background: rgba(79,195,247,0.12); border-radius: 2px; overflow: hidden; margin: 3px 0 6px;
+  }
+  .bar-fill {
+    height: 100%; background: linear-gradient(90deg, var(--cyan-dim), var(--cyan-bright));
+    width: 10%; transition: width 0.3s ease;
+  }
+  .mini-radar {
+    width: 100%; aspect-ratio: 1; border-radius: 50%;
+    border: 1px solid var(--cyan-dim); position: relative; overflow: hidden;
+    background: radial-gradient(circle, rgba(79,195,247,0.06), transparent 70%);
+  }
+  .mini-radar .sweep {
+    position: absolute; inset: 0;
+    background: conic-gradient(rgba(79,195,247,0.5), transparent 30%);
+    animation: spinSelf 3s linear infinite;
+    border-radius: 50%;
+  }
+  .mini-radar .blip-dot {
+    position: absolute; width: 4px; height: 4px; border-radius: 50%;
+    background: var(--amber); box-shadow: 0 0 5px var(--amber);
+  }
+  .waveform-wrap { width: 100%; max-width: 480px; margin: 0 auto 6px; }
+  #waveform { width: 100%; height: 34px; display: block; }
+
+  /* ---------- Pannello diagnostica microfono ---------- */
+  .diagnostics {
+    width: 100%; max-width: 620px; margin-bottom: 14px;
+    border: 1px solid var(--border); border-radius: 4px; background: var(--panel);
+    backdrop-filter: blur(4px); padding: 10px 14px; position: relative;
+  }
+  .diagnostics::before {
+    content: ""; position: absolute; top: -1px; left: -1px; width: 12px; height: 12px;
+    border-top: 1px solid var(--cyan); border-left: 1px solid var(--cyan);
+  }
+  .diagnostics::after {
+    content: ""; position: absolute; bottom: -1px; right: -1px; width: 12px; height: 12px;
+    border-bottom: 1px solid var(--cyan); border-right: 1px solid var(--cyan);
+  }
+  .diag-title {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.14em;
+    color: var(--cyan-bright); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .diag-title .toggle-diag { cursor: pointer; color: var(--muted); }
+  .diag-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  }
+  .diag-grid .k { color: var(--muted); }
+  .diag-grid .v { text-align: right; }
+  .diag-grid .v.ok { color: #7FE38A; }
+  .diag-grid .v.bad { color: var(--coral); }
+  .diag-grid .v.warn { color: var(--amber); }
+  .diag-event {
+    margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--muted);
+    display: flex; justify-content: space-between;
+  }
+  .diag-event b { color: var(--cyan-bright); font-weight: 500; }
 </style>
 </head>
 <body>
 
   <div class="hud-radar"></div>
+  <div class="hexgrid"></div>
   <div class="hud-scanline"></div>
   <div class="hud-corner tl"></div>
   <div class="hud-corner tr"></div>
@@ -318,23 +425,48 @@
   </div>
 
   <div class="config-warning" id="configWarning" style="display:none;">
-    ⚠ Devi impostare l'indirizzo del tuo proxy nella riga <strong>WORKER_URL</strong> in fondo al codice.
+    ⚠ Devi impostare l'indirizzo del tuo proxy nella riga <strong>WORKER_URL</strong> in
+    fondo al codice di questo file prima di usare Jarvis.
   </div>
 
   <div class="banner" id="unsupportedBanner" style="display:none;">
-    Questo browser non supporta l'ascolto vocale continuo.
+    Questo browser non supporta l'ascolto vocale continuo. Il riconoscimento vocale di Jarvis
+    funziona solo su <strong>Google Chrome</strong> o <strong>Microsoft Edge</strong> (desktop o Android).
+    <strong>Safari su iPhone/iPad non è supportato</strong> da nessun browser, per limitazioni di iOS.
+    Puoi comunque scrivere le domande qui sotto.
   </div>
   <div class="banner" id="insecureBanner" style="display:none;">
-    ⚠ Questa pagina non è servita in <strong>HTTPS</strong>. Il microfono potrebbe essere bloccato.
+    ⚠ Questa pagina non è servita in <strong>HTTPS</strong> (o da <strong>localhost</strong>). I browser bloccano
+    il microfono per motivi di sicurezza sulle pagine aperte come file locale. Carica questo file su un hosting HTTPS
+    (es. GitHub Pages, Netlify, Vercel) per usare "Ehi Jarvis". La scrittura manuale funziona comunque.
   </div>
   <div class="banner" id="errorBanner" style="display:none;"></div>
 
   <div class="hud-body">
+    <div class="side-stack">
+      <div class="stack-panel">
+        <div class="sp-title"><span class="flicker">SCANSIONE</span><span class="blip"></span></div>
+        <div class="mini-radar" id="miniRadar">
+          <div class="sweep"></div>
+        </div>
+      </div>
+      <div class="stack-panel">
+        <div class="sp-title"><span>SISTEMA</span><span class="blip"></span></div>
+        <div class="stat-row"><span>CORE</span><b id="statCore">STABLE</b></div>
+        <div class="bar-track"><div class="bar-fill" id="barCore" style="width:22%"></div></div>
+        <div class="stat-row"><span>VOICE ENGINE</span><b id="statVoice">--</b></div>
+        <div class="bar-track"><div class="bar-fill" id="barVoice" style="width:5%"></div></div>
+        <div class="stat-row"><span>LATENZA</span><b id="statLatency">-- ms</b></div>
+      </div>
+    </div>
+
     <div class="gauge-panel" id="gaugeMicPanel">
       <div class="label">MIC INPUT</div>
       <svg width="86" height="86" viewBox="0 0 86 86">
         <circle cx="43" cy="43" r="36" fill="none" stroke="var(--cyan-dim)" stroke-width="4" opacity="0.4"/>
-        <circle id="gaugeMic" cx="43" cy="43" r="36" fill="none" stroke="var(--cyan-bright)" stroke-width="4" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226" transform="rotate(-90 43 43)"/>
+        <circle id="gaugeMic" cx="43" cy="43" r="36" fill="none" stroke="var(--cyan-bright)" stroke-width="4"
+          stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226"
+          transform="rotate(-90 43 43)"/>
       </svg>
       <div class="value" id="gaugeMicValue">0%</div>
     </div>
@@ -358,10 +490,31 @@
       <div class="label">UPLINK</div>
       <svg width="86" height="86" viewBox="0 0 86 86">
         <circle cx="43" cy="43" r="36" fill="none" stroke="var(--cyan-dim)" stroke-width="4" opacity="0.4"/>
-        <circle id="gaugeNet" cx="43" cy="43" r="36" fill="none" stroke="var(--amber)" stroke-width="4" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226" transform="rotate(-90 43 43)"/>
+        <circle id="gaugeNet" cx="43" cy="43" r="36" fill="none" stroke="var(--amber)" stroke-width="4"
+          stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226"
+          transform="rotate(-90 43 43)"/>
       </svg>
       <div class="value" id="gaugeNetValue">IDLE</div>
     </div>
+
+    <div class="side-stack">
+      <div class="stack-panel">
+        <div class="sp-title"><span>LOCALE</span><span class="blip"></span></div>
+        <div class="stat-row"><span>LINGUA</span><b>IT-IT</b></div>
+        <div class="stat-row"><span>WAKE WORD</span><b>"Ehi Jarvis"</b></div>
+        <div class="stat-row"><span>MODALITA'</span><b id="statModePanel">SPENTO</b></div>
+      </div>
+      <div class="stack-panel">
+        <div class="sp-title"><span class="flicker">RETE</span><span class="blip"></span></div>
+        <div class="stat-row"><span>PROXY</span><b id="statProxy">--</b></div>
+        <div class="bar-track"><div class="bar-fill" id="barNet" style="width:0%"></div></div>
+        <div class="stat-row"><span>RICHIESTE</span><b id="statReqPanel">0</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="waveform-wrap">
+    <canvas id="waveform"></canvas>
   </div>
 
   <div class="interim" id="interimText"></div>
@@ -373,13 +526,30 @@
 
   <div class="readout" id="readout">
     <div class="placeholder" id="readoutPlaceholder">
-      Di' "Ehi Jarvis" seguito dalla tua richiesta.
+      Di' "Ehi Jarvis" seguito dalla tua richiesta — ricerche, analisi di aziende, o qualsiasi domanda.
     </div>
     <div class="user-line line" id="readoutUser" style="display:none;"></div>
     <div class="jarvis-line line" id="readoutJarvis" style="display:none;"></div>
   </div>
 
   <div class="history-ticker" id="historyTicker"></div>
+
+  <div class="diagnostics" id="diagnostics">
+    <div class="diag-title">
+      <span>◈ DIAGNOSTICA MICROFONO</span>
+      <span class="toggle-diag" id="toggleDiag">[nascondi]</span>
+    </div>
+    <div class="diag-grid" id="diagGrid">
+      <div class="k">Contesto sicuro (HTTPS)</div><div class="v" id="diagSecure">--</div>
+      <div class="k">API riconoscimento vocale</div><div class="v" id="diagApi">--</div>
+      <div class="k">Permesso microfono</div><div class="v" id="diagPerm">--</div>
+      <div class="k">Motore in ascolto</div><div class="v" id="diagListening">--</div>
+    </div>
+    <div class="diag-event">
+      <span>Ultimo evento:</span>
+      <b id="diagLastEvent">nessuno</b>
+    </div>
+  </div>
 
   <form id="manualForm">
     <input type="text" id="manualInput" placeholder="Oppure scrivi qui la tua domanda..." autocomplete="off" />
@@ -423,7 +593,10 @@
   let audioCtx = null, analyser = null, stream = null, rafId = null;
   let cachedVoice = null;
   let lastRecognitionActivity = 0;
+  let watchdogInterval = null;
+  let restarting = false;
   let requestCount = 0;
+  let micErrorShown = false;
 
   const els = {
     statusDot: document.getElementById('statusDot'),
@@ -457,20 +630,148 @@
     tAudioVal: document.getElementById('tAudioVal'),
     tCpuVal: document.getElementById('tCpuVal'),
     tReqVal: document.getElementById('tReqVal'),
+    statCore: document.getElementById('statCore'),
+    barCore: document.getElementById('barCore'),
+    statVoice: document.getElementById('statVoice'),
+    barVoice: document.getElementById('barVoice'),
+    statLatency: document.getElementById('statLatency'),
+    statModePanel: document.getElementById('statModePanel'),
+    statProxy: document.getElementById('statProxy'),
+    barNet: document.getElementById('barNet'),
+    statReqPanel: document.getElementById('statReqPanel'),
+    waveform: document.getElementById('waveform'),
+    miniRadar: document.getElementById('miniRadar'),
+    diagnostics: document.getElementById('diagnostics'),
+    diagGrid: document.getElementById('diagGrid'),
+    toggleDiag: document.getElementById('toggleDiag'),
+    diagSecure: document.getElementById('diagSecure'),
+    diagApi: document.getElementById('diagApi'),
+    diagPerm: document.getElementById('diagPerm'),
+    diagListening: document.getElementById('diagListening'),
+    diagLastEvent: document.getElementById('diagLastEvent'),
   };
+
+  els.statProxy.textContent = (!WORKER_URL || WORKER_URL.indexOf("INCOLLA_QUI") !== -1) ? "NON CONFIGURATO" : "CONFIGURATO";
+
+  els.toggleDiag.addEventListener('click', () => {
+    const hidden = els.diagGrid.style.display === 'none';
+    els.diagGrid.style.display = hidden ? 'grid' : 'none';
+    els.toggleDiag.textContent = hidden ? '[nascondi]' : '[mostra]';
+  });
 
   if (!WORKER_URL || WORKER_URL.indexOf("INCOLLA_QUI") !== -1) {
     els.configWarning.style.display = "block";
   }
 
-  const isSecureContext = window.isSecureContext || location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
-  if (!isSecureContext) els.insecureBanner.style.display = "block";
+  // Se la pagina non è in un contesto sicuro (https o localhost), il
+  // microfono verrà bloccato dal browser: è la causa più comune di
+  // "il riconoscimento vocale non funziona".
+  const isSecureContext = window.isSecureContext ||
+    location.protocol === "https:" ||
+    location.hostname === "localhost" ||
+    location.hostname === "127.0.0.1";
+  if (!isSecureContext) {
+    els.insecureBanner.style.display = "block";
+  }
 
-  // Orologio
-  function tickClock() { els.clock.textContent = new Date().toLocaleTimeString("it-IT", { hour12: false }); }
-  tickClock(); setInterval(tickClock, 1000);
+  // ---------- Blip casuali nel mini radar ----------
+  function spawnRadarBlip() {
+    const dot = document.createElement('div');
+    dot.className = 'blip-dot';
+    const angle = Math.random() * Math.PI * 2;
+    const r = 15 + Math.random() * 32;
+    dot.style.left = (50 + r * Math.cos(angle) / 2) + '%';
+    dot.style.top = (50 + r * Math.sin(angle) / 2) + '%';
+    els.miniRadar.appendChild(dot);
+    setTimeout(() => dot.remove(), 1800);
+  }
+  setInterval(spawnRadarBlip, 1700);
 
-  // Animazione orbita
+  // ---------- Diagnostica microfono in tempo reale ----------
+  function setDiagVal(el, text, cls) {
+    el.textContent = text;
+    el.className = 'v' + (cls ? ' ' + cls : '');
+  }
+
+  function logDiagEvent(name) {
+    const t = new Date().toLocaleTimeString('it-IT', { hour12: false });
+    els.diagLastEvent.textContent = name + ' @ ' + t;
+  }
+
+  async function refreshDiagnostics() {
+    setDiagVal(els.diagSecure, isSecureContext ? 'OK' : 'BLOCCATO', isSecureContext ? 'ok' : 'bad');
+
+    const hasApi = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+    setDiagVal(els.diagApi, hasApi ? 'DISPONIBILE' : 'NON SUPPORTATA', hasApi ? 'ok' : 'bad');
+
+    if (navigator.permissions && navigator.permissions.query) {
+      try {
+        const status = await navigator.permissions.query({ name: 'microphone' });
+        const map = { granted: ['CONCESSO', 'ok'], denied: ['NEGATO', 'bad'], prompt: ['DA CONCEDERE', 'warn'] };
+        const [label, cls] = map[status.state] || ['SCONOSCIUTO', 'warn'];
+        setDiagVal(els.diagPerm, label, cls);
+      } catch (e) {
+        setDiagVal(els.diagPerm, 'NON VERIFICABILE', 'warn');
+      }
+    } else {
+      setDiagVal(els.diagPerm, 'NON VERIFICABILE', 'warn');
+    }
+
+    const listening = (mode !== 'off' && mode !== 'error');
+    setDiagVal(els.diagListening, listening ? 'ATTIVO' : 'FERMO', listening ? 'ok' : 'warn');
+  }
+  refreshDiagnostics();
+  setInterval(refreshDiagnostics, 3000);
+
+  // ---------- Oscilloscopio audio live ----------
+  let waveCtx = null;
+  function drawWaveformIdle() {
+    if (!waveCtx) waveCtx = els.waveform.getContext('2d');
+    const w = els.waveform.width = els.waveform.clientWidth * (window.devicePixelRatio || 1);
+    const h = els.waveform.height = 34 * (window.devicePixelRatio || 1);
+    waveCtx.clearRect(0, 0, w, h);
+    waveCtx.strokeStyle = 'rgba(79,195,247,0.25)';
+    waveCtx.lineWidth = 1;
+    waveCtx.beginPath();
+    waveCtx.moveTo(0, h / 2);
+    waveCtx.lineTo(w, h / 2);
+    waveCtx.stroke();
+  }
+  drawWaveformIdle();
+  window.addEventListener('resize', () => { if (!analyser) drawWaveformIdle(); });
+
+  function drawWaveformLive() {
+    if (!analyser || !waveCtx) { rafWave = requestAnimationFrame(drawWaveformLive); return; }
+    const bufferLength = analyser.fftSize;
+    const dataArray = new Uint8Array(bufferLength);
+    analyser.getByteTimeDomainData(dataArray);
+    const w = els.waveform.width, h = els.waveform.height;
+    waveCtx.clearRect(0, 0, w, h);
+    waveCtx.strokeStyle = mode === 'capturing' ? '#7FE3FF' : '#4FC3F7';
+    waveCtx.lineWidth = 2;
+    waveCtx.beginPath();
+    const slice = w / bufferLength;
+    let x = 0;
+    for (let i = 0; i < bufferLength; i++) {
+      const v = dataArray[i] / 128.0;
+      const y = (v * h) / 2;
+      if (i === 0) waveCtx.moveTo(x, y); else waveCtx.lineTo(x, y);
+      x += slice;
+    }
+    waveCtx.stroke();
+    rafWave = requestAnimationFrame(drawWaveformLive);
+  }
+  let rafWave = null;
+
+  // ---------- Orologio nel chip identità ----------
+  function tickClock() {
+    const now = new Date();
+    els.clock.textContent = now.toLocaleTimeString("it-IT", { hour12: false });
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  // ---------- Satelliti orbitanti attorno al reattore ----------
   let orbitAngle = 0;
   function animateOrbit() {
     orbitAngle += 0.6;
@@ -521,6 +822,12 @@
 
     setNetGauge(m === "thinking" ? 1 : 0, m === "thinking" ? "INVIO..." : (m === "off" ? "IDLE" : "PRONTO"));
     updateOrbSize();
+
+    els.statModePanel.textContent = STATUS_TEXT[m] ? STATUS_TEXT[m].toUpperCase() : m.toUpperCase();
+    els.statCore.textContent = (m === "error") ? "ERRORE" : "STABLE";
+    els.barCore.style.width = (m === "error") ? "8%" : (m === "thinking" ? "88%" : "22%");
+    els.statVoice.textContent = (m === "off") ? "OFFLINE" : (m === "capturing" ? "ACQUISIZIONE" : "ONLINE");
+    els.barVoice.style.width = (m === "off") ? "4%" : (m === "capturing" ? "90%" : "35%");
   }
 
   function updateOrbSize() {
@@ -533,15 +840,18 @@
 
   function setMicGauge(v) {
     const pct = Math.max(0, Math.min(1, v));
-    els.gaugeMic.style.strokeDashoffset = String(226 * (1 - pct));
+    const circumference = 226;
+    els.gaugeMic.style.strokeDashoffset = String(circumference * (1 - pct));
     els.gaugeMicValue.textContent = Math.round(pct * 100) + "%";
   }
   function setNetGauge(v, label) {
     const pct = Math.max(0, Math.min(1, v));
-    els.gaugeNet.style.strokeDashoffset = String(226 * (1 - pct));
+    const circumference = 226;
+    els.gaugeNet.style.strokeDashoffset = String(circumference * (1 - pct));
     els.gaugeNetValue.textContent = label;
   }
 
+  // ---------- Mini grafici telemetria (puramente decorativi) ----------
   function makeStrip(canvas, colorVar) {
     const ctx = canvas.getContext('2d');
     const bars = new Array(24).fill(0);
@@ -567,18 +877,19 @@
   setInterval(() => {
     stripAudio.push(level);
     els.tAudioVal.textContent = Math.round(level * 100);
-    stripCpu.push(mode === "thinking" ? 0.7 + Math.random() * 0.3 : 0.1 + Math.random() * 0.15);
+    const cpuLoad = mode === "thinking" ? 0.7 + Math.random() * 0.3 : 0.1 + Math.random() * 0.15;
+    stripCpu.push(cpuLoad);
     els.tCpuVal.textContent = mode === "thinking" ? "ALTA" : "NORM";
     stripReq.push(Math.min(1, requestCount / 5));
     els.tReqVal.textContent = String(requestCount);
+    els.statReqPanel.textContent = String(requestCount);
+    els.barNet.style.width = (mode === "thinking" ? 90 : 6) + "%";
   }, 400);
 
-  // ---------- GESTIONE LINK (App & Web) ----------
+  // ---------- Estrazione e resa dei link ----------
   function extractAndRenderLinks(rawText) {
-    // Ora accetta qualsiasi formato url o uri scheme dentro le parentesi
-    const linkPattern = /\[([^\]]+)\]\s*\(\s*([^\s\)]+)\s*\)/g;
-    const rawUrlPattern = /(?<!href="|'|>)(https?:\/\/[^\s\)<>]+)/g;
-    
+    const linkPattern = /\[([^\]]+)\]\(([^\s)]+)\)/g;
+    const rawUrlPattern = /(https?:\/\/[^\s<]+)/g;
     let htmlAnswer = rawText;
     let spokenText = rawText;
     const links = [];
@@ -591,7 +902,6 @@
       htmlAnswer = htmlAnswer.replace(match[0], `[[LINK:${links.length - 1}]]`);
       spokenText = spokenText.replace(match[0], label);
     }
-    
     let raw;
     while ((raw = rawUrlPattern.exec(htmlAnswer)) !== null) {
       let url = raw[1].replace(/[.,;:!)]+$/, "");
@@ -611,25 +921,35 @@
   }
 
   function tryOpenLink(url) {
-    if (url.toLowerCase().startsWith('http')) {
+    if (/^https?:\/\//i.test(url)) {
       const opened = window.open(url, "_blank");
       return !!(opened && !opened.closed);
     }
-    // Deep links per App
     try {
-      window.location.href = url;
+      const a = document.createElement("a");
+      a.href = url;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       return true;
     } catch (e) {
       return false;
     }
   }
 
+  // ---------- Readout senza riquadro (sostituisce il vecchio log) ----------
   const historyEntries = [];
+
   function pushHistory(role, text) {
     historyEntries.push({ role, text });
     while (historyEntries.length > 3) historyEntries.shift();
-    
+    renderHistoryTicker();
+  }
+
+  function renderHistoryTicker() {
     els.historyTicker.innerHTML = "";
+    // Mostra solo le voci precedenti all'ultima coppia (quella attuale è nel readout grande)
     const older = historyEntries.slice(0, -2);
     older.forEach(entry => {
       const div = document.createElement('div');
@@ -652,7 +972,6 @@
 
     const { htmlAnswer, links } = extractAndRenderLinks(jarvisRawText);
     const parts = htmlAnswer.split(/(__LINKPLACEHOLDER_\d+__)/g);
-    
     parts.forEach((part) => {
       const ph = part.match(/^__LINKPLACEHOLDER_(\d+)__$/);
       if (ph) {
@@ -661,6 +980,7 @@
         const a = document.createElement("a");
         a.href = url;
         a.target = "_blank";
+        a.rel = "noopener noreferrer";
         a.className = "jarvis-link";
         a.textContent = url.length > 46 ? url.slice(0, 46) + "…" : url;
         els.readoutJarvis.appendChild(document.createElement("br"));
@@ -669,9 +989,14 @@
         els.readoutJarvis.appendChild(document.createTextNode(part));
       }
     });
-    
     if (links.length > 0) {
-      tryOpenLink(links[0]);
+      const ok = tryOpenLink(links[0]);
+      if (!ok) {
+        const note = document.createElement("span");
+        note.className = "popup-note";
+        note.textContent = "Il browser ha bloccato l'apertura automatica — usa il pulsante qui sopra.";
+        els.readoutJarvis.appendChild(note);
+      }
     }
   }
 
@@ -682,13 +1007,14 @@
     requestCount++;
 
     if (!WORKER_URL || WORKER_URL.indexOf("INCOLLA_QUI") !== -1) {
-      const msg = "Indirizzo del server non configurato.";
+      const msg = "Non ho ancora un indirizzo del server configurato. Segui le istruzioni per impostare WORKER_URL.";
       showReadout(question, msg);
       pushHistory("jarvis", msg);
       speak(msg);
       return;
     }
 
+    const t0 = performance.now();
     try {
       const response = await fetch(WORKER_URL, {
         method: "POST",
@@ -696,41 +1022,47 @@
         body: JSON.stringify({ question })
       });
       const data = await response.json();
-      const answer = (data.text || "Errore di elaborazione.").trim();
-      
+      els.statLatency.textContent = Math.round(performance.now() - t0) + " ms";
+      const answer = (data.text || "Non sono riuscito a elaborare una risposta.").trim();
       showReadout(question, answer);
       pushHistory("jarvis", answer);
-      
       const { spokenText } = extractAndRenderLinks(answer);
       speak(spokenText || answer);
     } catch (e) {
-      const msg = "Errore di connessione al server.";
+      const msg = "Ho avuto un problema a contattare il server. Riprova.";
       showReadout(question, msg);
       pushHistory("jarvis", msg);
       speak(msg);
     }
   }
 
-  // ---------- SINTESI VOCALE (1.92 vel / 1.22 tono) ----------
+  // ---------- Selezione voce femminile italiana ----------
   function pickFemaleItalianVoice(voices) {
     const itVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith("it"));
     if (itVoices.length === 0) return null;
-    const premium = ["elsa", "alice", "natural", "online", "google italiano"];
-    let candidate = itVoices.find(v => premium.some(p => v.name.toLowerCase().includes(p)));
-    return candidate || itVoices[0];
+    const femaleHints = ["elsa", "alice", "federica", "isabella", "elisa", "paola", "silvia", "chiara", "francesca", "valentina", "female", "google italiano"];
+    const maleHints = ["diego", "luca", "cosimo", "roberto", "marco", "giorgio", "male"];
+    let candidate = itVoices.find(v => {
+      const n = v.name.toLowerCase();
+      return femaleHints.some(h => n.includes(h)) && !maleHints.some(h => n.includes(h));
+    });
+    if (!candidate) candidate = itVoices.find(v => !maleHints.some(h => v.name.toLowerCase().includes(h)));
+    if (!candidate) candidate = itVoices[0];
+    return candidate;
   }
 
   function speak(text) {
     if (muted || !("speechSynthesis" in window)) { setMode(mode === "off" ? "off" : "awake"); return; }
     window.speechSynthesis.cancel();
-    
     setTimeout(() => {
       const utter = new SpeechSynthesisUtterance(text);
       utter.lang = "it-IT";
-      utter.rate = 1.92;
+      utter.rate = 1.85;
       utter.pitch = 1.22;
 
-      if (!cachedVoice) cachedVoice = pickFemaleItalianVoice(window.speechSynthesis.getVoices());
+      if (!cachedVoice) {
+        cachedVoice = pickFemaleItalianVoice(window.speechSynthesis.getVoices());
+      }
       if (cachedVoice) utter.voice = cachedVoice;
 
       utter.onend = () => setMode(mode === "off" ? "off" : "awake");
@@ -741,10 +1073,11 @@
   }
 
   if ("speechSynthesis" in window) {
-    window.speechSynthesis.onvoiceschanged = () => { cachedVoice = pickFemaleItalianVoice(window.speechSynthesis.getVoices()); };
+    window.speechSynthesis.onvoiceschanged = () => {
+      cachedVoice = pickFemaleItalianVoice(window.speechSynthesis.getVoices());
+    };
   }
 
-  // ---------- GESTIONE MICROFONO (Ripulita dai crash) ----------
   function resetSilenceTimer() {
     if (silenceTimer) clearTimeout(silenceTimer);
     silenceTimer = setTimeout(finalizeCommand, 1400);
@@ -754,7 +1087,7 @@
     const cmd = commandBuffer.trim();
     commandBuffer = "";
     els.interimText.textContent = "";
-    if (cmd.length > 1) askJarvis(cmd); else setMode("awake");
+    if (cmd.length > 1) { askJarvis(cmd); } else { setMode("awake"); }
   }
 
   function showError(msg) {
@@ -763,24 +1096,29 @@
   }
   function clearError() {
     els.errorBanner.style.display = "none";
+    els.errorBanner.textContent = "";
   }
 
-  async function ensureMicPermission() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("unsupported");
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    return true;
-  }
-
+  // ---------- Riconoscimento vocale ----------
   function buildRecognitionInstance() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return null;
+    if (!SR) { els.unsupportedBanner.style.display = "block"; return null; }
     const r = new SR();
     r.continuous = true;
     r.interimResults = true;
     r.lang = "it-IT";
     r.maxAlternatives = 1;
 
+    r.onstart = () => { lastRecognitionActivity = Date.now(); clearError(); logDiagEvent('onstart'); };
+    r.onaudiostart = () => { logDiagEvent('onaudiostart (mic collegato)'); };
+    r.onsoundstart = () => { logDiagEvent('onsoundstart (suono rilevato)'); };
+    r.onspeechstart = () => { logDiagEvent('onspeechstart (voce rilevata)'); };
+    r.onspeechend = () => { logDiagEvent('onspeechend'); };
+    r.onaudioend = () => { logDiagEvent('onaudioend'); };
+
     r.onresult = (event) => {
+      lastRecognitionActivity = Date.now();
+      logDiagEvent('onresult');
       let finalChunk = "", interimChunk = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const t = event.results[i][0].transcript;
@@ -795,6 +1133,9 @@
             commandBuffer = remainder;
             els.interimText.textContent = '"' + remainder + '"';
             resetSilenceTimer();
+          } else {
+            commandBuffer = "";
+            els.interimText.textContent = "";
           }
         }
       } else if (mode === "capturing") {
@@ -806,31 +1147,64 @@
     };
 
     r.onerror = (event) => {
-      if (event.error === "no-speech" || event.error === "network") return; 
-      if (event.error === "not-allowed") {
-        showError("Microfono bloccato dal browser.");
+      lastRecognitionActivity = Date.now();
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        showError("Accesso al microfono negato. Consenti l'uso del microfono nelle impostazioni del sito (icona del lucchetto nella barra degli indirizzi) e riattiva Jarvis.");
         setMode("error");
+        return;
       }
+      if (event.error === "audio-capture") {
+        showError("Nessun microfono trovato. Collega un microfono e riprova.");
+        setMode("error");
+        return;
+      }
+      // Errori recuperabili (no-speech, network, aborted): riavvia senza allarmare l'utente
+      if (mode !== "off" && mode !== "error") scheduleRestart();
     };
 
     r.onend = () => {
-      // Riavvio dolce e silenzioso se non stiamo parlando o pensando
-      if (mode === "awake" || mode === "capturing") {
-        setTimeout(() => { try { r.start(); } catch(e){} }, 250);
-      }
+      if (mode !== "off" && mode !== "error") scheduleRestart();
     };
 
     return r;
   }
 
-  async function startListening() {
-    clearError();
-    if (!isSecureContext) { els.insecureBanner.style.display = "block"; return; }
-    
+  function scheduleRestart() {
+    if (restarting) return;
+    restarting = true;
+    setTimeout(() => {
+      restarting = false;
+      if (mode === "off" || mode === "error") return;
+      try {
+        if (recognition) { recognition.onend = null; try { recognition.stop(); } catch (e) {} }
+      } catch (e) {}
+      recognition = buildRecognitionInstance();
+      if (recognition) {
+        try { recognition.start(); lastRecognitionActivity = Date.now(); } catch (e) {}
+      }
+    }, 300);
+  }
+
+  // Sorveglianza: se il riconoscimento non dà segni di vita per troppo
+  // tempo mentre dovrebbe essere attivo, forza un riavvio (copre i casi
+  // in cui il browser lo blocca senza generare "onend").
+  function startWatchdog() {
+    if (watchdogInterval) clearInterval(watchdogInterval);
+    watchdogInterval = setInterval(() => {
+      if (mode === "off" || mode === "error") return;
+      if (mode === "speaking" || mode === "thinking") return;
+      const idle = Date.now() - lastRecognitionActivity;
+      if (idle > 12000) scheduleRestart();
+    }, 5000);
+  }
+  function stopWatchdog() {
+    if (watchdogInterval) clearInterval(watchdogInterval);
+    watchdogInterval = null;
+  }
+
+  async function startAnalyser() {
     try {
-      await ensureMicPermission();
-      
-      // Il trucco: passiamo il VERO stream autorizzato all'Analizzatore Grafico
+      if (!stream) stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const source = audioCtx.createMediaStreamSource(stream);
       analyser = audioCtx.createAnalyser();
@@ -846,35 +1220,100 @@
         rafId = requestAnimationFrame(tick);
       };
       tick();
+      if (rafWave) cancelAnimationFrame(rafWave);
+      drawWaveformLive();
+    } catch (e) { /* l'orb non reagirà al volume, non blocca il funzionamento */ }
+  }
 
-      // ...E POI facciamo partire il Riconoscimento Vocale
-      recognition = buildRecognitionInstance();
-      if (recognition) {
-        recognition.start();
-        setMode("awake");
-      }
+  function stopAnalyser() {
+    if (rafId) cancelAnimationFrame(rafId);
+    if (rafWave) cancelAnimationFrame(rafWave);
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    if (audioCtx) audioCtx.close().catch(() => {});
+    analyser = null;
+    level = 0;
+    setMicGauge(0);
+    updateOrbSize();
+    drawWaveformIdle();
+  }
+
+  // Richiede esplicitamente il permesso al microfono PRIMA di avviare il
+  // riconoscimento vocale: su molti browser, se questo permesso non è
+  // ancora stato concesso, l'avvio "silenzioso" di SpeechRecognition
+  // fallisce senza un errore chiaro. Chiedendolo prima, l'utente vede
+  // subito il popup di autorizzazione del browser.
+  async function ensureMicPermission() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error("unsupported");
+    }
+    const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream = s;
+    return true;
+  }
+
+  async function startListening() {
+    clearError();
+    if (!isSecureContext) {
+      els.insecureBanner.style.display = "block";
+      return;
+    }
+    try {
+      await ensureMicPermission();
     } catch (e) {
-      showError("Impossibile avviare il microfono in modo congiunto.");
+      if (e && e.name === "NotAllowedError") {
+        showError("Accesso al microfono negato. Consenti l'uso del microfono nelle impostazioni del sito e riprova.");
+      } else if (e && e.name === "NotFoundError") {
+        showError("Nessun microfono trovato su questo dispositivo.");
+      } else {
+        showError("Impossibile accedere al microfono su questo browser/dispositivo.");
+      }
+      setMode("error");
+      return;
+    }
+
+    recognition = buildRecognitionInstance();
+    if (!recognition) return;
+    try {
+      recognition.start();
+      lastRecognitionActivity = Date.now();
+      setMode("awake");
+      startAnalyser();
+      startWatchdog();
+    } catch (e) {
+      showError("Impossibile avviare il microfono. Ricarica la pagina e riprova.");
       setMode("error");
     }
   }
 
   function stopListening() {
     setMode("off");
-    if (recognition) { recognition.onend = null; try{ recognition.stop(); }catch(e){} recognition = null; }
+    stopWatchdog();
+    if (recognition) { recognition.onend = null; try { recognition.stop(); } catch (e) {} recognition = null; }
     if (silenceTimer) clearTimeout(silenceTimer);
     window.speechSynthesis && window.speechSynthesis.cancel();
-    if (rafId) cancelAnimationFrame(rafId);
-    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-    if (audioCtx) audioCtx.close().catch(() => {});
-    level = 0; setMicGauge(0); updateOrbSize();
+    stopAnalyser();
     els.interimText.textContent = "";
     commandBuffer = "";
   }
 
-  els.toggleBtn.addEventListener('click', () => { (mode === "off" || mode === "error") ? startListening() : stopListening(); });
-  els.muteBtn.addEventListener('click', () => { muted = !muted; els.muteBtn.textContent = muted ? "Audio disattivato" : "Silenzia risposta"; els.muteBtn.style.color = muted ? "#FF6B6B" : "#4FC3F7"; });
-  els.manualForm.addEventListener('submit', (e) => { e.preventDefault(); const val = els.manualInput.value.trim(); if (!val) return; askJarvis(val); els.manualInput.value = ""; });
+  els.toggleBtn.addEventListener('click', () => {
+    (mode === "off" || mode === "error") ? startListening() : stopListening();
+  });
+
+  els.muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    els.muteBtn.textContent = muted ? "Audio disattivato" : "Silenzia risposta";
+    els.muteBtn.style.color = muted ? "#FF6B6B" : "#4FC3F7";
+  });
+
+  els.manualForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const val = els.manualInput.value.trim();
+    if (!val) return;
+    askJarvis(val);
+    els.manualInput.value = "";
+  });
+
   window.addEventListener('beforeunload', () => { stopListening(); });
 
   setMode("off");
