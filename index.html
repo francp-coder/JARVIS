@@ -1,4 +1,360 @@
-async function askJarvis(question) {
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>J.A.R.V.I.S.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #030711;
+    --panel: rgba(10, 22, 40, 0.55);
+    --border: rgba(79, 195, 247, 0.25);
+    --cyan: #4FC3F7;
+    --cyan-bright: #7FE3FF;
+    --cyan-dim: #1C4A63;
+    --amber: #FFB454;
+    --coral: #FF6B6B;
+    --text: #E7F6FF;
+    --muted: #6E8CA3;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: radial-gradient(ellipse at 50% 0%, #0A1830 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 36px 16px 20px;
+    position: relative;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(79,195,247,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,195,247,0.06) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: radial-gradient(ellipse at 50% 20%, black 0%, transparent 70%);
+    animation: gridDrift 40s linear infinite;
+    z-index: 0;
+    pointer-events: none;
+  }
+  @keyframes gridDrift {
+    from { background-position: 0 0, 0 0; }
+    to { background-position: 84px 84px, 84px 84px; }
+  }
+  * { z-index: 1; position: relative; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 3px; }
+  input:focus, button:focus { outline: 1px solid var(--cyan-bright); outline-offset: 2px; }
+
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes spinReverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  @keyframes coreGlow {
+    0%, 100% { box-shadow: 0 0 30px 6px var(--cyan-dim), inset 0 0 30px rgba(79,195,247,0.3); }
+    50% { box-shadow: 0 0 50px 14px rgba(79,195,247,0.55), inset 0 0 40px rgba(127,227,255,0.5); }
+  }
+  @keyframes scanline {
+    0% { transform: translateY(-100%); } 100% { transform: translateY(100%); }
+  }
+
+  .header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .header::before, .header::after {
+    content: ""; width: 26px; height: 1px; background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+  }
+  h1 {
+    font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 26px;
+    letter-spacing: 0.12em; margin: 0; color: var(--cyan-bright);
+    text-shadow: 0 0 18px rgba(79,195,247,0.7);
+  }
+  .version { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 26px; }
+
+  .status { font-family: 'JetBrains Mono', monospace; font-size: 12px; margin-bottom: 22px; display: flex; align-items: center; gap: 8px; letter-spacing: 0.05em; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px currentColor; }
+
+  .banner { background: rgba(255,107,107,0.08); border: 1px solid var(--coral); color: #FFC9C9; border-radius: 4px; padding: 12px 16px; font-size: 13px; max-width: 460px; margin-bottom: 20px; line-height: 1.5; font-family: 'Rajdhani', sans-serif; }
+
+  .reactor-wrap {
+    position: relative; width: 240px; height: 240px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+  }
+  .ring { position: absolute; border-radius: 50%; border-style: solid; }
+  .ring-outer {
+    width: 230px; height: 230px; border-width: 1px; border-color: var(--cyan-dim);
+    border-top-color: var(--cyan); border-right-color: var(--cyan);
+    animation: spin 9s linear infinite;
+  }
+  .ring-mid {
+    width: 188px; height: 188px; border-width: 1px; border-color: transparent;
+    border-top-color: var(--cyan-bright); border-bottom-color: var(--cyan-bright);
+    opacity: 0.7;
+    animation: spinReverse 6s linear infinite;
+  }
+  .ring-hex {
+    width: 158px; height: 158px;
+    border: 1px dashed var(--cyan-dim);
+    animation: spin 22s linear infinite;
+  }
+  .ring-tick {
+    width: 210px; height: 210px; border-radius: 50%;
+    background: repeating-conic-gradient(var(--cyan-dim) 0deg 1deg, transparent 1deg 6deg);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 6px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 6px));
+    opacity: 0.5;
+    animation: spin 30s linear infinite;
+  }
+  .core {
+    width: 92px; height: 92px; border-radius: 50%;
+    background: radial-gradient(circle at 38% 32%, var(--cyan-bright) 0%, var(--cyan) 35%, #05263A 78%);
+    animation: coreGlow 2.6s ease-in-out infinite;
+    transition: width 0.08s ease-out, height 0.08s ease-out, background 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .core::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%);
+    animation: scanline 2.4s linear infinite;
+  }
+
+  .interim { min-height: 22px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--cyan-bright); margin-bottom: 20px; text-align: center; max-width: 480px; letter-spacing: 0.02em; }
+
+  .controls { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; justify-content: center; }
+  button.pill {
+    border-radius: 3px; padding: 10px 24px; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 12px;
+    letter-spacing: 0.08em; cursor: pointer; border: 1px solid var(--cyan-dim); background: rgba(79,195,247,0.06); color: var(--cyan-bright);
+    transition: all 0.2s; text-transform: uppercase;
+  }
+  button.pill:hover { background: rgba(79,195,247,0.15); border-color: var(--cyan); }
+  button.pill.primary { background: var(--cyan); color: #01131E; border-color: var(--cyan); box-shadow: 0 0 20px rgba(79,195,247,0.5); }
+  button.pill.primary:hover { background: var(--cyan-bright); }
+
+  .log {
+    width: 100%; max-width: 580px; background: var(--panel); backdrop-filter: blur(6px);
+    border: 1px solid var(--border); border-radius: 6px; padding: 18px 20px; height: 280px;
+    overflow-y: auto; margin-bottom: 18px; position: relative;
+  }
+  .log::before {
+    content: ""; position: absolute; top: -1px; left: -1px; width: 14px; height: 14px;
+    border-top: 2px solid var(--cyan); border-left: 2px solid var(--cyan);
+  }
+  .log::after {
+    content: ""; position: absolute; bottom: -1px; right: -1px; width: 14px; height: 14px;
+    border-bottom: 2px solid var(--cyan); border-right: 2px solid var(--cyan);
+  }
+  .log-empty { color: var(--muted); font-size: 14px; font-style: italic; }
+  .entry { margin-bottom: 16px; }
+  .entry-role { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; margin-bottom: 4px; }
+  .entry-text { font-size: 16px; line-height: 1.5; color: var(--text); font-weight: 500; }
+  .entry-text a.jarvis-link {
+    display: inline-block; margin-top: 8px; margin-right: 8px;
+    background: rgba(79,195,247,0.12); border: 1px solid var(--cyan);
+    color: var(--cyan-bright); text-decoration: none; padding: 7px 14px;
+    border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    letter-spacing: 0.03em; transition: all 0.2s;
+  }
+  .entry-text a.jarvis-link:hover { background: rgba(79,195,247,0.25); }
+  .entry-text a.jarvis-link::before { content: "↗ "; }
+  .popup-note { display: block; margin-top: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--amber); }
+
+  form { width: 100%; max-width: 580px; display: flex; gap: 8px; }
+  input[type=text] {
+    flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 4px;
+    padding: 12px 14px; color: var(--text); font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 500;
+  }
+  input[type=text]::placeholder { color: var(--muted); }
+  form button {
+    background: rgba(79,195,247,0.1); border: 1px solid var(--cyan-dim); border-radius: 4px; padding: 0 20px;
+    color: var(--cyan-bright); font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 12px;
+    letter-spacing: 0.08em; cursor: pointer; text-transform: uppercase;
+  }
+
+  .footnote { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 22px; text-align: center; max-width: 480px; line-height: 1.6; }
+
+  .config-warning {
+    background: rgba(255,180,84,0.08); border: 1px solid var(--amber); color: #FFE0B0;
+    border-radius: 4px; padding: 12px 16px; font-size: 13px; max-width: 480px; margin-bottom: 20px; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>J.A.R.V.I.S.</h1>
+  </div>
+  <div class="version">SISTEMA VOCALE PERSONALE · DEEPSEEK V3</div>
+
+  <div class="status" id="statusLine">
+    <span class="dot" id="statusDot"></span>
+    <span id="statusText">Avvio in corso...</span>
+  </div>
+
+  <div class="config-warning" id="configWarning" style="display:none;">
+    ⚠ Devi impostare l'indirizzo del tuo proxy nella riga <strong>WORKER_URL</strong> in
+    fondo al codice di questo file prima di usare Jarvis.
+  </div>
+
+  <div class="banner" id="unsupportedBanner" style="display:none;">
+    Questo browser non supporta l'ascolto vocale continuo. Apri questa pagina con
+    <strong>Google Chrome</strong> per usare "Ehi Jarvis". Puoi comunque scrivere le domande
+    qui sotto.
+  </div>
+  <div class="banner" id="errorBanner" style="display:none;"></div>
+
+  <div class="reactor-wrap">
+    <div class="ring ring-tick"></div>
+    <div class="ring ring-outer" id="ringOuter"></div>
+    <div class="ring ring-mid" id="ringMid"></div>
+    <div class="ring ring-hex" id="ringHex"></div>
+    <div class="core" id="core"></div>
+  </div>
+
+  <div class="interim" id="interimText"></div>
+
+  <div class="controls">
+    <button class="pill primary" id="toggleBtn">Attiva Jarvis</button>
+    <button class="pill" id="muteBtn">Silenzia risposta</button>
+  </div>
+
+  <div class="log" id="log">
+    <div class="log-empty" id="logEmpty">
+      La conversazione apparirà qui. Di' "Ehi Jarvis" seguito dalla tua richiesta —
+      ricerche, analisi di aziende, o qualsiasi domanda.
+    </div>
+  </div>
+
+  <form id="manualForm">
+    <input type="text" id="manualInput" placeholder="Oppure scrivi qui la tua domanda..." autocomplete="off" />
+    <button type="submit">Invia</button>
+  </form>
+
+  <div class="footnote">
+    Tieni questa finestra aperta e in primo piano perché Jarvis continui ad ascoltare.
+    Non ascolta a schermo spento o ridotto a icona: è un limite dei browser, non di Jarvis.
+  </div>
+
+<script>
+  // =========================================================
+  // INDIRIZZO DEL TUO PROXY
+  const WORKER_URL = "https://jarvis-proxy.francesco-32105.workers.dev";
+  // =========================================================
+
+  const WAKE_PATTERNS = ["ehi jarvis", "hey jarvis", "ok jarvis", "ciao jarvis", "ehi jarvi", "e jarvis"];
+  const COLORS = { awake: "#4FC3F7", capturing: "#7FE3FF", thinking: "#FFB454", speaking: "#7FE3FF", error: "#FF6B6B", off: "#1C4A63" };
+  const STATUS_TEXT = {
+    off: "Spento", awake: 'In ascolto — di\' "Ehi Jarvis"', capturing: "Ti ascolto...",
+    thinking: "Sto elaborando...", speaking: "Jarvis sta parlando", error: "Errore"
+  };
+
+  let mode = "off";
+  let muted = false;
+  let recognition = null;
+  let silenceTimer = null;
+  let commandBuffer = "";
+  let level = 0;
+  let audioCtx = null, analyser = null, stream = null, rafId = null;
+
+  const els = {
+    statusDot: document.getElementById('statusDot'),
+    statusText: document.getElementById('statusText'),
+    unsupportedBanner: document.getElementById('unsupportedBanner'),
+    errorBanner: document.getElementById('errorBanner'),
+    configWarning: document.getElementById('configWarning'),
+    core: document.getElementById('core'),
+    ringOuter: document.getElementById('ringOuter'),
+    ringMid: document.getElementById('ringMid'),
+    ringHex: document.getElementById('ringHex'),
+    interimText: document.getElementById('interimText'),
+    toggleBtn: document.getElementById('toggleBtn'),
+    muteBtn: document.getElementById('muteBtn'),
+    log: document.getElementById('log'),
+    logEmpty: document.getElementById('logEmpty'),
+    manualForm: document.getElementById('manualForm'),
+    manualInput: document.getElementById('manualInput'),
+  };
+
+  if (!WORKER_URL || WORKER_URL.indexOf("INCOLLA_QUI") !== -1) {
+    els.configWarning.style.display = "block";
+  }
+
+  function stripAccents(s) { return s.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+
+  function findWakeWord(rawText) {
+    const text = stripAccents(rawText.toLowerCase());
+    for (const pattern of WAKE_PATTERNS) {
+      const idx = text.indexOf(pattern);
+      if (idx !== -1) {
+        const after = rawText.slice(idx + pattern.length).trim().replace(/^[,\.\s]+/, "");
+        return { found: true, remainder: after };
+      }
+    }
+    return { found: false, remainder: "" };
+  }
+
+  function setMode(m) {
+    mode = m;
+    const color = COLORS[m] || "#1C4A63";
+    els.statusDot.style.background = color;
+    els.statusDot.style.color = color;
+    els.statusDot.style.animation = m !== "off" ? "pulse 1.6s infinite" : "none";
+    els.statusText.textContent = STATUS_TEXT[m];
+    els.statusText.style.color = color;
+    els.toggleBtn.textContent = (m === "off" || m === "error") ? "Attiva Jarvis" : "Disattiva";
+    els.toggleBtn.className = "pill" + ((m === "off" || m === "error") ? " primary" : "");
+
+    els.ringOuter.style.animationDuration = m === "thinking" ? "2.5s" : m === "capturing" ? "3.5s" : "9s";
+    els.ringMid.style.animationDuration = m === "thinking" ? "1.8s" : "6s";
+    els.ringOuter.style.borderTopColor = color;
+    els.ringOuter.style.borderRightColor = color;
+    els.ringMid.style.borderTopColor = color;
+    els.ringMid.style.borderBottomColor = color;
+
+    updateOrbSize();
+  }
+
+  function updateOrbSize() {
+    const color = COLORS[mode] || "#1C4A63";
+    const coreSize = 92 + level * 26;
+    els.core.style.width = coreSize + "px";
+    els.core.style.height = coreSize + "px";
+    els.core.style.background = `radial-gradient(circle at 38% 32%, #FFFFFF 0%, ${color} 35%, #05263A 78%)`;
+  }
+
+  function addLogEntry(role, text, isHTML = false) {
+    els.logEmpty.style.display = "none";
+    const entry = document.createElement("div");
+    entry.className = "entry";
+    const roleEl = document.createElement("div");
+    roleEl.className = "entry-role";
+    roleEl.style.color = role === "user" ? "#7FE3FF" : "#FFB454";
+    roleEl.textContent = role === "user" ? "TU" : "JARVIS";
+    
+    const textEl = document.createElement("div");
+    textEl.className = "entry-text";
+    
+    if (isHTML) {
+        textEl.innerHTML = text;
+    } else {
+        textEl.textContent = text;
+    }
+    
+    entry.appendChild(roleEl);
+    entry.appendChild(textEl);
+    els.log.appendChild(entry);
+    els.log.scrollTop = els.log.scrollHeight;
+  }
+
+  async function askJarvis(question) {
     setMode("thinking");
     addLogEntry("user", question);
     els.interimText.textContent = "";
@@ -19,50 +375,57 @@ async function askJarvis(question) {
       const data = await response.json();
       
       // ====================================================
-      // GESTIONE DEI LINK (Inclusi App Deep Links come discord://)
+      // GESTIONE DEI LINK (Inclusi App Deep Links)
       // ====================================================
       let linksToOpen = [];
       let rawAnswer = (data.text || "Non sono riuscito a elaborare una risposta.").trim();
 
-      // 1. Regex modificata per accettare protocolli come discord://, spotify:// oltre a http/https
-      let htmlAnswer = rawAnswer.replace(/\[([^\]]+)\]\s*\(\s*([a-zA-Z0-9.\-]+:\/\/[^\s\)]*)\s*\)/g, function(match, testo, url) {
+      // 1. Regex sicura: accetta http, https, discord, spotify, tg, whatsapp, ecc.
+      const regexMarkdown = /\[([^\]]+)\]\s*\(\s*([a-zA-Z0-9.\-]+:\/\/[^\s\)]*)\s*\)/g;
+      
+      let htmlAnswer = rawAnswer;
+      let speechAnswer = rawAnswer;
+
+      let match;
+      while ((match = regexMarkdown.exec(rawAnswer)) !== null) {
+          let fullMatch = match[0];
+          let text = match[1];
+          let url = match[2];
+          
+          url = url.replace(/[\.,;:!\)]+$/, '');
           linksToOpen.push(url);
-          return `<a href="${url}" target="_blank" class="jarvis-link">${testo}</a>`;
-      });
+          
+          htmlAnswer = htmlAnswer.replace(fullMatch, `<a href="${url}" target="_blank" class="jarvis-link">${text}</a>`);
+          speechAnswer = speechAnswer.replace(fullMatch, text);
+      }
 
-      // 2. Togli gli URL grezzi se non sono tra parentesi
-      htmlAnswer = htmlAnswer.replace(/(?<!href="|'|>)(https?:\/\/[^\s\)<>]+)/g, function(match, url) {
-          let cleanUrl = url.replace(/[\.,;:!]+$/, ''); 
-          if (!linksToOpen.includes(cleanUrl)) { linksToOpen.push(cleanUrl); }
-          return `<a href="${cleanUrl}" target="_blank" class="jarvis-link">${cleanUrl}</a>`;
-      });
+      // 2. URL grezzi (solo http/https)
+      const regexRawUrl = /(?<!href="|'|>)(https?:\/\/[^\s\)<>]+)/g;
+      while ((match = regexRawUrl.exec(htmlAnswer)) !== null) {
+          let url = match[1];
+          url = url.replace(/[\.,;:!]+$/, '');
+          
+          if (!linksToOpen.includes(url)) {
+              linksToOpen.push(url);
+          }
+          
+          htmlAnswer = htmlAnswer.replace(match[1], `<a href="${url}" target="_blank" class="jarvis-link">${url}</a>`);
+          speechAnswer = speechAnswer.replace(match[1], "");
+      }
 
-      // 3. Prepara il testo per la voce (togliendo i link)
-      let speechAnswer = rawAnswer.replace(/\[([^\]]+)\]\s*\(\s*([a-zA-Z0-9.\-]+:\/\/[^\s\)]*)\s*\)/g, "$1");
-      speechAnswer = speechAnswer.replace(/(https?:\/\/[^\s\)<>]+)/g, ""); 
-      speechAnswer = speechAnswer.replace(/\*/g, "").replace(/\n/g, " ").trim(); 
-
-      // 4. Mettiamo i tag <br> per andare a capo nella chat visiva
       htmlAnswer = htmlAnswer.replace(/\n/g, '<br>');
+      speechAnswer = speechAnswer.replace(/\*/g, "").trim();
 
-      // ====================================================
-      // AZIONI FINALI
-      // ====================================================
-      // Tenta l'apertura automatica (I browser potrebbero bloccare discord:// al primo tentativo per sicurezza)
+      // 3. Esegui apertura link
       linksToOpen.forEach(url => {
-          // Usa window.location per i deep link delle app, window.open per i siti web
           if (url.startsWith('http')) {
               window.open(url, '_blank');
           } else {
-              // I deep link a volte vengono bloccati dal popup blocker o interpretati male se usati con _blank
-              window.location.href = url;
+              window.location.href = url; // Apre le app locali (es. discord://)
           }
       });
       
-      // Mostra in chat passando isHTML = true per far renderizzare i pulsanti
       addLogEntry("jarvis", htmlAnswer, true);
-      
-      // Fai parlare Jarvis
       speak(speechAnswer);
 
     } catch (e) {
@@ -71,3 +434,163 @@ async function askJarvis(question) {
       speak(msg);
     }
   }
+
+  function speak(text) {
+    if (muted || !("speechSynthesis" in window)) { setMode(mode === "off" ? "off" : "awake"); return; }
+    setMode("speaking");
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = "it-IT";
+    
+    const voices = window.speechSynthesis.getVoices();
+    const itVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith("it"));
+    if (itVoice) utter.voice = itVoice;
+    
+    utter.onend = () => setMode(mode === "off" ? "off" : "awake");
+    utter.onerror = () => setMode(mode === "off" ? "off" : "awake");
+    window.speechSynthesis.speak(utter);
+  }
+
+  function resetSilenceTimer() {
+    if (silenceTimer) clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(finalizeCommand, 1400);
+  }
+
+  function finalizeCommand() {
+    const cmd = commandBuffer.trim();
+    commandBuffer = "";
+    els.interimText.textContent = "";
+    if (cmd.length > 1) { askJarvis(cmd); } else { setMode("awake"); }
+  }
+
+  function setupRecognition() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { els.unsupportedBanner.style.display = "block"; return null; }
+    const r = new SR();
+    r.continuous = true;
+    r.interimResults = true;
+    r.lang = "it-IT";
+
+    r.onresult = (event) => {
+      let finalChunk = "", interimChunk = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalChunk += t; else interimChunk += t;
+      }
+      if (mode === "awake") {
+        const probe = finalChunk || interimChunk;
+        const { found, remainder } = findWakeWord(probe);
+        if (found) {
+          setMode("capturing");
+          if (remainder && remainder.length > 1) {
+            commandBuffer = remainder;
+            els.interimText.textContent = '"' + remainder + '"';
+            resetSilenceTimer();
+          } else {
+            commandBuffer = "";
+            els.interimText.textContent = "";
+          }
+        }
+      } else if (mode === "capturing") {
+        if (finalChunk) commandBuffer = (commandBuffer + " " + finalChunk).trim();
+        const shown = (commandBuffer + " " + interimChunk).trim();
+        els.interimText.textContent = shown ? '"' + shown + '"' : "";
+        resetSilenceTimer();
+      }
+    };
+
+    r.onerror = (event) => {
+      if (event.error === "no-speech" || event.error === "aborted") return;
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        els.errorBanner.textContent = "Accesso al microfono negato. Consenti l'uso del microfono per usare Jarvis.";
+        els.errorBanner.style.display = "block";
+        setMode("error");
+      }
+    };
+
+    r.onend = () => {
+      if (mode !== "off" && mode !== "error") {
+        try { r.start(); } catch (e) {}
+      }
+    };
+
+    return r;
+  }
+
+  async function startAnalyser() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(data);
+        const avg = data.reduce((a, b) => a + b, 0) / data.length;
+        level = Math.min(1, avg / 90);
+        updateOrbSize();
+        rafId = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch (e) { /* orb non reagirà al volume, non blocca il funzionamento */ }
+  }
+
+  function stopAnalyser() {
+    if (rafId) cancelAnimationFrame(rafId);
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    if (audioCtx) audioCtx.close().catch(() => {});
+    level = 0;
+    updateOrbSize();
+  }
+
+  async function startListening() {
+    els.errorBanner.style.display = "none";
+    recognition = setupRecognition();
+    if (!recognition) return;
+    try {
+      recognition.start();
+      setMode("awake");
+      startAnalyser();
+    } catch (e) {
+      els.errorBanner.textContent = "Impossibile avviare il microfono.";
+      els.errorBanner.style.display = "block";
+      setMode("error");
+    }
+  }
+
+  function stopListening() {
+    setMode("off");
+    if (recognition) { recognition.onend = null; recognition.stop(); recognition = null; }
+    if (silenceTimer) clearTimeout(silenceTimer);
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    stopAnalyser();
+    els.interimText.textContent = "";
+    commandBuffer = "";
+  }
+
+  els.toggleBtn.addEventListener('click', () => {
+    (mode === "off" || mode === "error") ? startListening() : stopListening();
+  });
+
+  els.muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    els.muteBtn.textContent = muted ? "Audio disattivato" : "Silenzia risposta";
+    els.muteBtn.style.color = muted ? "#FF6B6B" : "#4FC3F7";
+  });
+
+  els.manualForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const val = els.manualInput.value.trim();
+    if (!val) return;
+    askJarvis(val);
+    els.manualInput.value = "";
+  });
+
+  window.addEventListener('beforeunload', () => { stopListening(); });
+
+  setMode("off");
+</script>
+</body>
+</html>
