@@ -376,9 +376,10 @@
       let rawAnswer = (data.text || "Non sono riuscito a elaborare una risposta.").trim();
 
       // ====================================================
-      // GESTIONE DEI LINK (Reso tollerante anche alla punteggiatura finale)
+      // GESTIONE DEI LINK (Supporta App Deep Links e HTTP)
       // ====================================================
-      const regexMarkdown = /\[([^\]]+)\]\s*\(\s*(https?:\/\/[^\s\)]+)\s*\)/g;
+      // Regex sicura che accetta tutti i protocolli validi (http, https, discord, spotify, tg, ecc)
+      const regexMarkdown = /\[([^\]]+)\]\s*\(\s*([a-zA-Z0-9.\-]+:\/\/[^\s\)]+)\s*\)/g;
       
       let htmlAnswer = rawAnswer;
       let speechAnswer = rawAnswer;
@@ -390,16 +391,14 @@
           let text = match[1];
           let url = match[2];
           
-          // Pulisce l'URL da eventuale punteggiatura finale rimasta (es. punto o virgola prima/dopo)
           url = url.replace(/[\.,;:!\)]+$/, '');
-          
           linksToOpen.push(url);
           
           htmlAnswer = htmlAnswer.replace(fullMatch, `<a href="${url}" target="_blank" class="jarvis-link">${text}</a>`);
           speechAnswer = speechAnswer.replace(fullMatch, text);
       }
 
-      // Gestione URL grezzi
+      // Gestione URL grezzi (Solo per http/https normali, non spariamo protocolli strani a caso)
       const regexRawUrl = /(?<!href="|'|>)(https?:\/\/[^\s\)<>]+)/g;
       while ((match = regexRawUrl.exec(htmlAnswer)) !== null) {
           let url = match[1];
@@ -416,8 +415,24 @@
       htmlAnswer = htmlAnswer.replace(/\n/g, '<br>');
       speechAnswer = speechAnswer.replace(/\*/g, "").trim();
 
-      // Azioni finali
-      linksToOpen.forEach(url => window.open(url, '_blank'));
+      // ====================================================
+      // AZIONI FINALI: APERTURA INTELLIGENTE APP / TAB
+      // ====================================================
+      linksToOpen.forEach(url => {
+          if (url.toLowerCase().startsWith('http')) {
+              // Apri i siti internet in una nuova scheda normalmente
+              window.open(url, '_blank');
+          } else {
+              // Metodo infallibile per forzare il sistema ad aprire le app (es. Discord, Spotify)
+              // creando un link fittizio e "cliccandolo" senza bloccare la pagina.
+              const a = document.createElement('a');
+              a.href = url;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+          }
+      });
+      
       addLogEntry("jarvis", htmlAnswer, true);
       speak(speechAnswer);
 
@@ -432,15 +447,31 @@
     if (muted || !("speechSynthesis" in window)) { setMode(mode === "off" ? "off" : "awake"); return; }
     setMode("speaking");
     window.speechSynthesis.cancel();
+    
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "it-IT";
     
+    // Configurazione per una voce femminile molto più fluida e naturale
+    utter.rate = 1.0; 
+    utter.pitch = 1.15; // Leggermente più alto per un tono femminile più chiaro
+    
     const voices = window.speechSynthesis.getVoices();
-    const itVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith("it"));
-    if (itVoice) utter.voice = itVoice;
+    
+    // Ricerca le voci premium migliori (Google, Microsoft Elsa, o Alice su Mac)
+    let vocePremium = voices.find(v => v.lang.includes("it") && (v.name.includes("Elsa") || v.name.includes("Alice") || v.name.includes("Google italiano")));
+    
+    // Se non ne trova una premium, cerca qualsiasi voce italiana
+    if (!vocePremium) {
+        vocePremium = voices.find(v => v.lang.includes("it"));
+    }
+    
+    if (vocePremium) {
+        utter.voice = vocePremium;
+    }
     
     utter.onend = () => setMode(mode === "off" ? "off" : "awake");
     utter.onerror = () => setMode(mode === "off" ? "off" : "awake");
+    
     window.speechSynthesis.speak(utter);
   }
 
