@@ -378,7 +378,6 @@
       // ====================================================
       // GESTIONE DEI LINK (Supporta App Deep Links e HTTP)
       // ====================================================
-      // Regex sicura che accetta tutti i protocolli validi (http, https, discord, spotify, tg, ecc)
       const regexMarkdown = /\[([^\]]+)\]\s*\(\s*([a-zA-Z0-9.\-]+:\/\/[^\s\)]+)\s*\)/g;
       
       let htmlAnswer = rawAnswer;
@@ -398,7 +397,6 @@
           speechAnswer = speechAnswer.replace(fullMatch, text);
       }
 
-      // Gestione URL grezzi (Solo per http/https normali, non spariamo protocolli strani a caso)
       const regexRawUrl = /(?<!href="|'|>)(https?:\/\/[^\s\)<>]+)/g;
       while ((match = regexRawUrl.exec(htmlAnswer)) !== null) {
           let url = match[1];
@@ -420,16 +418,17 @@
       // ====================================================
       linksToOpen.forEach(url => {
           if (url.toLowerCase().startsWith('http')) {
-              // Apri i siti internet in una nuova scheda normalmente
+              // Apri i siti internet normalmente
               window.open(url, '_blank');
           } else {
-              // Metodo infallibile per forzare il sistema ad aprire le app (es. Discord, Spotify)
-              // creando un link fittizio e "cliccandolo" senza bloccare la pagina.
-              const a = document.createElement('a');
-              a.href = url;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
+              // TRUCCO IFRAME: Forza l'OS ad aprire l'app nativa bypassando i blocchi popup
+              let iframe = document.createElement('iframe');
+              iframe.style.display = 'none';
+              iframe.src = url;
+              document.body.appendChild(iframe);
+              setTimeout(() => {
+                  document.body.removeChild(iframe);
+              }, 3000);
           }
       });
       
@@ -452,21 +451,26 @@
     utter.lang = "it-IT";
     
     // Configurazione per una voce femminile molto più fluida e naturale
-    utter.rate = 1.0; 
-    utter.pitch = 1.15; // Leggermente più alto per un tono femminile più chiaro
+    utter.rate = 1.05; // Un tocco più veloce per fluidità
+    utter.pitch = 1.2; // Tono leggermente più alto per una voce spiccatamente femminile
     
     const voices = window.speechSynthesis.getVoices();
+    let itVoices = voices.filter(v => v.lang.toLowerCase().startsWith("it"));
     
-    // Ricerca le voci premium migliori (Google, Microsoft Elsa, o Alice su Mac)
-    let vocePremium = voices.find(v => v.lang.includes("it") && (v.name.includes("Elsa") || v.name.includes("Alice") || v.name.includes("Google italiano")));
+    // Ricerca le voci premium migliori (Online/Natural Microsoft, Google italiano, Elsa, Alice, Bianca)
+    let preferredVoice = itVoices.find(v => 
+        v.name.includes("Natural") || 
+        v.name.includes("Online") || 
+        v.name.includes("Elsa") || 
+        v.name.includes("Alice") || 
+        v.name.includes("Bianca") || 
+        v.name.includes("Google italiano")
+    );
     
-    // Se non ne trova una premium, cerca qualsiasi voce italiana
-    if (!vocePremium) {
-        vocePremium = voices.find(v => v.lang.includes("it"));
-    }
-    
-    if (vocePremium) {
-        utter.voice = vocePremium;
+    if (preferredVoice) {
+        utter.voice = preferredVoice;
+    } else if (itVoices.length > 0) {
+        utter.voice = itVoices[0]; // Fallback sulla prima voce italiana disponibile
     }
     
     utter.onend = () => setMode(mode === "off" ? "off" : "awake");
