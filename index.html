@@ -220,7 +220,7 @@
   button.pill.primary { background: var(--cyan); color: #01131E; border-color: var(--cyan); box-shadow: 0 0 20px rgba(79,195,247,0.5); }
   button.pill.primary:hover { background: var(--cyan-bright); }
 
-  /* ---------- Readout: sostituisce il vecchio riquadro di log ---------- */
+  /* ---------- Readout ---------- */
   .readout {
     width: 100%; max-width: 620px;
     min-height: 96px;
@@ -250,7 +250,7 @@
     letter-spacing: 0.03em; transition: all 0.2s;
   }
   .readout .jarvis-line a.jarvis-link:hover { background: rgba(79,195,247,0.25); }
-  .readout .jarvis-line a.jarvis-link::before { content: "↗️ "; }
+  .readout .jarvis-line a.jarvis-link::before { content: "↗ "; }
   .popup-note { display: block; margin-top: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--amber); }
   .readout .placeholder { color: var(--muted); font-size: 14px; font-style: italic; }
 
@@ -318,20 +318,14 @@
   </div>
 
   <div class="config-warning" id="configWarning" style="display:none;">
-    ⚠ Devi impostare l'indirizzo del tuo proxy nella riga <strong>WORKER_URL</strong> in
-    fondo al codice di questo file prima di usare Jarvis.
+    ⚠ Devi impostare l'indirizzo del tuo proxy nella riga <strong>WORKER_URL</strong> in fondo al codice.
   </div>
 
   <div class="banner" id="unsupportedBanner" style="display:none;">
-    Questo browser non supporta l'ascolto vocale continuo. Il riconoscimento vocale di Jarvis
-    funziona solo su <strong>Google Chrome</strong> o <strong>Microsoft Edge</strong> (desktop o Android).
-    <strong>Safari su iPhone/iPad non è supportato</strong> da nessun browser, per limitazioni di iOS.
-    Puoi comunque scrivere le domande qui sotto.
+    Questo browser non supporta l'ascolto vocale continuo.
   </div>
   <div class="banner" id="insecureBanner" style="display:none;">
-    ⚠ Questa pagina non è servita in <strong>HTTPS</strong> (o da <strong>localhost</strong>). I browser bloccano
-    il microfono per motivi di sicurezza sulle pagine aperte come file locale. Carica questo file su un hosting HTTPS
-    (es. GitHub Pages, Netlify, Vercel) per usare "Ehi Jarvis". La scrittura manuale funziona comunque.
+    ⚠ Questa pagina non è servita in <strong>HTTPS</strong>. Il microfono potrebbe essere bloccato.
   </div>
   <div class="banner" id="errorBanner" style="display:none;"></div>
 
@@ -340,9 +334,7 @@
       <div class="label">MIC INPUT</div>
       <svg width="86" height="86" viewBox="0 0 86 86">
         <circle cx="43" cy="43" r="36" fill="none" stroke="var(--cyan-dim)" stroke-width="4" opacity="0.4"/>
-        <circle id="gaugeMic" cx="43" cy="43" r="36" fill="none" stroke="var(--cyan-bright)" stroke-width="4"
-          stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226"
-          transform="rotate(-90 43 43)"/>
+        <circle id="gaugeMic" cx="43" cy="43" r="36" fill="none" stroke="var(--cyan-bright)" stroke-width="4" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226" transform="rotate(-90 43 43)"/>
       </svg>
       <div class="value" id="gaugeMicValue">0%</div>
     </div>
@@ -366,9 +358,7 @@
       <div class="label">UPLINK</div>
       <svg width="86" height="86" viewBox="0 0 86 86">
         <circle cx="43" cy="43" r="36" fill="none" stroke="var(--cyan-dim)" stroke-width="4" opacity="0.4"/>
-        <circle id="gaugeNet" cx="43" cy="43" r="36" fill="none" stroke="var(--amber)" stroke-width="4"
-          stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226"
-          transform="rotate(-90 43 43)"/>
+        <circle id="gaugeNet" cx="43" cy="43" r="36" fill="none" stroke="var(--amber)" stroke-width="4" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226" transform="rotate(-90 43 43)"/>
       </svg>
       <div class="value" id="gaugeNetValue">IDLE</div>
     </div>
@@ -383,7 +373,7 @@
 
   <div class="readout" id="readout">
     <div class="placeholder" id="readoutPlaceholder">
-      Di' "Ehi Jarvis" seguito dalla tua richiesta — ricerche, analisi di aziende, o qualsiasi domanda.
+      Di' "Ehi Jarvis" seguito dalla tua richiesta.
     </div>
     <div class="user-line line" id="readoutUser" style="display:none;"></div>
     <div class="jarvis-line line" id="readoutJarvis" style="display:none;"></div>
@@ -433,10 +423,7 @@
   let audioCtx = null, analyser = null, stream = null, rafId = null;
   let cachedVoice = null;
   let lastRecognitionActivity = 0;
-  let watchdogInterval = null;
-  let restarting = false;
   let requestCount = 0;
-  let micErrorShown = false;
 
   const els = {
     statusDot: document.getElementById('statusDot'),
@@ -476,26 +463,14 @@
     els.configWarning.style.display = "block";
   }
 
-  // Se la pagina non è in un contesto sicuro (https o localhost), il
-  // microfono verrà bloccato dal browser: è la causa più comune di
-  // "il riconoscimento vocale non funziona".
-  const isSecureContext = window.isSecureContext ||
-    location.protocol === "https:" ||
-    location.hostname === "localhost" ||
-    location.hostname === "127.0.0.1";
-  if (!isSecureContext) {
-    els.insecureBanner.style.display = "block";
-  }
+  const isSecureContext = window.isSecureContext || location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  if (!isSecureContext) els.insecureBanner.style.display = "block";
 
-  // ---------- Orologio nel chip identità ----------
-  function tickClock() {
-    const now = new Date();
-    els.clock.textContent = now.toLocaleTimeString("it-IT", { hour12: false });
-  }
-  tickClock();
-  setInterval(tickClock, 1000);
+  // Orologio
+  function tickClock() { els.clock.textContent = new Date().toLocaleTimeString("it-IT", { hour12: false }); }
+  tickClock(); setInterval(tickClock, 1000);
 
-  // ---------- Satelliti orbitanti attorno al reattore ----------
+  // Animazione orbita
   let orbitAngle = 0;
   function animateOrbit() {
     orbitAngle += 0.6;
@@ -558,18 +533,15 @@
 
   function setMicGauge(v) {
     const pct = Math.max(0, Math.min(1, v));
-    const circumference = 226;
-    els.gaugeMic.style.strokeDashoffset = String(circumference * (1 - pct));
+    els.gaugeMic.style.strokeDashoffset = String(226 * (1 - pct));
     els.gaugeMicValue.textContent = Math.round(pct * 100) + "%";
   }
   function setNetGauge(v, label) {
     const pct = Math.max(0, Math.min(1, v));
-    const circumference = 226;
-    els.gaugeNet.style.strokeDashoffset = String(circumference * (1 - pct));
+    els.gaugeNet.style.strokeDashoffset = String(226 * (1 - pct));
     els.gaugeNetValue.textContent = label;
   }
 
-  // ---------- Mini grafici telemetria (puramente decorativi) ----------
   function makeStrip(canvas, colorVar) {
     const ctx = canvas.getContext('2d');
     const bars = new Array(24).fill(0);
@@ -595,17 +567,18 @@
   setInterval(() => {
     stripAudio.push(level);
     els.tAudioVal.textContent = Math.round(level * 100);
-    const cpuLoad = mode === "thinking" ? 0.7 + Math.random() * 0.3 : 0.1 + Math.random() * 0.15;
-    stripCpu.push(cpuLoad);
+    stripCpu.push(mode === "thinking" ? 0.7 + Math.random() * 0.3 : 0.1 + Math.random() * 0.15);
     els.tCpuVal.textContent = mode === "thinking" ? "ALTA" : "NORM";
     stripReq.push(Math.min(1, requestCount / 5));
     els.tReqVal.textContent = String(requestCount);
   }, 400);
 
-  // ---------- Estrazione e resa dei link ----------
+  // ---------- GESTIONE LINK (App & Web) ----------
   function extractAndRenderLinks(rawText) {
-    const linkPattern = /\[([^\]]+)\]\(([^\s)]+)\)/g;
-    const rawUrlPattern = /(https?:\/\/[^\s<]+)/g;
+    // Ora accetta qualsiasi formato url o uri scheme dentro le parentesi
+    const linkPattern = /\[([^\]]+)\]\s*\(\s*([^\s\)]+)\s*\)/g;
+    const rawUrlPattern = /(?<!href="|'|>)(https?:\/\/[^\s\)<>]+)/g;
+    
     let htmlAnswer = rawText;
     let spokenText = rawText;
     const links = [];
@@ -618,6 +591,7 @@
       htmlAnswer = htmlAnswer.replace(match[0], `[[LINK:${links.length - 1}]]`);
       spokenText = spokenText.replace(match[0], label);
     }
+    
     let raw;
     while ((raw = rawUrlPattern.exec(htmlAnswer)) !== null) {
       let url = raw[1].replace(/[.,;:!)]+$/, "");
@@ -637,35 +611,25 @@
   }
 
   function tryOpenLink(url) {
-    if (/^https?:\/\//i.test(url)) {
+    if (url.toLowerCase().startsWith('http')) {
       const opened = window.open(url, "_blank");
       return !!(opened && !opened.closed);
     }
+    // Deep links per App
     try {
-      const a = document.createElement("a");
-      a.href = url;
-      a.style.display = "none";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      window.location.href = url;
       return true;
     } catch (e) {
       return false;
     }
   }
 
-  // ---------- Readout senza riquadro (sostituisce il vecchio log) ----------
   const historyEntries = [];
-
   function pushHistory(role, text) {
     historyEntries.push({ role, text });
     while (historyEntries.length > 3) historyEntries.shift();
-    renderHistoryTicker();
-  }
-
-  function renderHistoryTicker() {
+    
     els.historyTicker.innerHTML = "";
-    // Mostra solo le voci precedenti all'ultima coppia (quella attuale è nel readout grande)
     const older = historyEntries.slice(0, -2);
     older.forEach(entry => {
       const div = document.createElement('div');
@@ -688,6 +652,7 @@
 
     const { htmlAnswer, links } = extractAndRenderLinks(jarvisRawText);
     const parts = htmlAnswer.split(/(__LINKPLACEHOLDER_\d+__)/g);
+    
     parts.forEach((part) => {
       const ph = part.match(/^__LINKPLACEHOLDER_(\d+)__$/);
       if (ph) {
@@ -696,7 +661,6 @@
         const a = document.createElement("a");
         a.href = url;
         a.target = "_blank";
-        a.rel = "noopener noreferrer";
         a.className = "jarvis-link";
         a.textContent = url.length > 46 ? url.slice(0, 46) + "…" : url;
         els.readoutJarvis.appendChild(document.createElement("br"));
@@ -705,14 +669,9 @@
         els.readoutJarvis.appendChild(document.createTextNode(part));
       }
     });
+    
     if (links.length > 0) {
-      const ok = tryOpenLink(links[0]);
-      if (!ok) {
-        const note = document.createElement("span");
-        note.className = "popup-note";
-        note.textContent = "Il browser ha bloccato l'apertura automatica — usa il pulsante qui sopra.";
-        els.readoutJarvis.appendChild(note);
-      }
+      tryOpenLink(links[0]);
     }
   }
 
@@ -723,7 +682,7 @@
     requestCount++;
 
     if (!WORKER_URL || WORKER_URL.indexOf("INCOLLA_QUI") !== -1) {
-      const msg = "Non ho ancora un indirizzo del server configurato. Segui le istruzioni per impostare WORKER_URL.";
+      const msg = "Indirizzo del server non configurato.";
       showReadout(question, msg);
       pushHistory("jarvis", msg);
       speak(msg);
@@ -737,46 +696,41 @@
         body: JSON.stringify({ question })
       });
       const data = await response.json();
-      const answer = (data.text || "Non sono riuscito a elaborare una risposta.").trim();
+      const answer = (data.text || "Errore di elaborazione.").trim();
+      
       showReadout(question, answer);
       pushHistory("jarvis", answer);
+      
       const { spokenText } = extractAndRenderLinks(answer);
       speak(spokenText || answer);
     } catch (e) {
-      const msg = "Ho avuto un problema a contattare il server. Riprova.";
+      const msg = "Errore di connessione al server.";
       showReadout(question, msg);
       pushHistory("jarvis", msg);
       speak(msg);
     }
   }
 
-  // ---------- Selezione voce femminile italiana ----------
+  // ---------- SINTESI VOCALE (1.92 vel / 1.22 tono) ----------
   function pickFemaleItalianVoice(voices) {
     const itVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith("it"));
     if (itVoices.length === 0) return null;
-    const femaleHints = ["elsa", "alice", "federica", "isabella", "elisa", "paola", "silvia", "chiara", "francesca", "valentina", "female", "google italiano"];
-    const maleHints = ["diego", "luca", "cosimo", "roberto", "marco", "giorgio", "male"];
-    let candidate = itVoices.find(v => {
-      const n = v.name.toLowerCase();
-      return femaleHints.some(h => n.includes(h)) && !maleHints.some(h => n.includes(h));
-    });
-    if (!candidate) candidate = itVoices.find(v => !maleHints.some(h => v.name.toLowerCase().includes(h)));
-    if (!candidate) candidate = itVoices[0];
-    return candidate;
+    const premium = ["elsa", "alice", "natural", "online", "google italiano"];
+    let candidate = itVoices.find(v => premium.some(p => v.name.toLowerCase().includes(p)));
+    return candidate || itVoices[0];
   }
 
   function speak(text) {
     if (muted || !("speechSynthesis" in window)) { setMode(mode === "off" ? "off" : "awake"); return; }
     window.speechSynthesis.cancel();
+    
     setTimeout(() => {
       const utter = new SpeechSynthesisUtterance(text);
       utter.lang = "it-IT";
       utter.rate = 1.92;
       utter.pitch = 1.22;
 
-      if (!cachedVoice) {
-        cachedVoice = pickFemaleItalianVoice(window.speechSynthesis.getVoices());
-      }
+      if (!cachedVoice) cachedVoice = pickFemaleItalianVoice(window.speechSynthesis.getVoices());
       if (cachedVoice) utter.voice = cachedVoice;
 
       utter.onend = () => setMode(mode === "off" ? "off" : "awake");
@@ -787,11 +741,10 @@
   }
 
   if ("speechSynthesis" in window) {
-    window.speechSynthesis.onvoiceschanged = () => {
-      cachedVoice = pickFemaleItalianVoice(window.speechSynthesis.getVoices());
-    };
+    window.speechSynthesis.onvoiceschanged = () => { cachedVoice = pickFemaleItalianVoice(window.speechSynthesis.getVoices()); };
   }
 
+  // ---------- GESTIONE MICROFONO (Ripulita dai crash) ----------
   function resetSilenceTimer() {
     if (silenceTimer) clearTimeout(silenceTimer);
     silenceTimer = setTimeout(finalizeCommand, 1400);
@@ -801,7 +754,7 @@
     const cmd = commandBuffer.trim();
     commandBuffer = "";
     els.interimText.textContent = "";
-    if (cmd.length > 1) { askJarvis(cmd); } else { setMode("awake"); }
+    if (cmd.length > 1) askJarvis(cmd); else setMode("awake");
   }
 
   function showError(msg) {
@@ -810,23 +763,24 @@
   }
   function clearError() {
     els.errorBanner.style.display = "none";
-    els.errorBanner.textContent = "";
   }
 
-  // ---------- Riconoscimento vocale ----------
+  async function ensureMicPermission() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("unsupported");
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    return true;
+  }
+
   function buildRecognitionInstance() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { els.unsupportedBanner.style.display = "block"; return null; }
+    if (!SR) return null;
     const r = new SR();
     r.continuous = true;
     r.interimResults = true;
     r.lang = "it-IT";
     r.maxAlternatives = 1;
 
-    r.onstart = () => { lastRecognitionActivity = Date.now(); clearError(); };
-
     r.onresult = (event) => {
-      lastRecognitionActivity = Date.now();
       let finalChunk = "", interimChunk = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const t = event.results[i][0].transcript;
@@ -841,9 +795,6 @@
             commandBuffer = remainder;
             els.interimText.textContent = '"' + remainder + '"';
             resetSilenceTimer();
-          } else {
-            commandBuffer = "";
-            els.interimText.textContent = "";
           }
         }
       } else if (mode === "capturing") {
@@ -855,64 +806,31 @@
     };
 
     r.onerror = (event) => {
-      lastRecognitionActivity = Date.now();
-      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-        showError("Accesso al microfono negato. Consenti l'uso del microfono nelle impostazioni del sito (icona del lucchetto nella barra degli indirizzi) e riattiva Jarvis.");
+      if (event.error === "no-speech" || event.error === "network") return; 
+      if (event.error === "not-allowed") {
+        showError("Microfono bloccato dal browser.");
         setMode("error");
-        return;
       }
-      if (event.error === "audio-capture") {
-        showError("Nessun microfono trovato. Collega un microfono e riprova.");
-        setMode("error");
-        return;
-      }
-      // Errori recuperabili (no-speech, network, aborted): riavvia senza allarmare l'utente
-      if (mode !== "off" && mode !== "error") scheduleRestart();
     };
 
     r.onend = () => {
-      if (mode !== "off" && mode !== "error") scheduleRestart();
+      // Riavvio dolce e silenzioso se non stiamo parlando o pensando
+      if (mode === "awake" || mode === "capturing") {
+        setTimeout(() => { try { r.start(); } catch(e){} }, 250);
+      }
     };
 
     return r;
   }
 
-  function scheduleRestart() {
-    if (restarting) return;
-    restarting = true;
-    setTimeout(() => {
-      restarting = false;
-      if (mode === "off" || mode === "error") return;
-      try {
-        if (recognition) { recognition.onend = null; try { recognition.stop(); } catch (e) {} }
-      } catch (e) {}
-      recognition = buildRecognitionInstance();
-      if (recognition) {
-        try { recognition.start(); lastRecognitionActivity = Date.now(); } catch (e) {}
-      }
-    }, 300);
-  }
-
-  // Sorveglianza: se il riconoscimento non dà segni di vita per troppo
-  // tempo mentre dovrebbe essere attivo, forza un riavvio (copre i casi
-  // in cui il browser lo blocca senza generare "onend").
-  function startWatchdog() {
-    if (watchdogInterval) clearInterval(watchdogInterval);
-    watchdogInterval = setInterval(() => {
-      if (mode === "off" || mode === "error") return;
-      if (mode === "speaking" || mode === "thinking") return;
-      const idle = Date.now() - lastRecognitionActivity;
-      if (idle > 12000) scheduleRestart();
-    }, 5000);
-  }
-  function stopWatchdog() {
-    if (watchdogInterval) clearInterval(watchdogInterval);
-    watchdogInterval = null;
-  }
-
-  async function startAnalyser() {
+  async function startListening() {
+    clearError();
+    if (!isSecureContext) { els.insecureBanner.style.display = "block"; return; }
+    
     try {
-      if (!stream) stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      await ensureMicPermission();
+      
+      // Il trucco: passiamo il VERO stream autorizzato all'Analizzatore Grafico
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const source = audioCtx.createMediaStreamSource(stream);
       analyser = audioCtx.createAnalyser();
@@ -928,95 +846,35 @@
         rafId = requestAnimationFrame(tick);
       };
       tick();
-    } catch (e) { /* l'orb non reagirà al volume, non blocca il funzionamento */ }
-  }
 
-  function stopAnalyser() {
-    if (rafId) cancelAnimationFrame(rafId);
-    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-    if (audioCtx) audioCtx.close().catch(() => {});
-    level = 0;
-    setMicGauge(0);
-    updateOrbSize();
-  }
-
-  // Richiede esplicitamente il permesso al microfono PRIMA di avviare il
-  // riconoscimento vocale: su molti browser, se questo permesso non è
-  // ancora stato concesso, l'avvio "silenzioso" di SpeechRecognition
-  // fallisce senza un errore chiaro. Chiedendolo prima, l'utente vede
-  // subito il popup di autorizzazione del browser.
-  async function ensureMicPermission() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      throw new Error("unsupported");
-    }
-    const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream = s;
-    return true;
-  }
-
-  async function startListening() {
-    clearError();
-    if (!isSecureContext) {
-      els.insecureBanner.style.display = "block";
-      return;
-    }
-    try {
-      await ensureMicPermission();
-    } catch (e) {
-      if (e && e.name === "NotAllowedError") {
-        showError("Accesso al microfono negato. Consenti l'uso del microfono nelle impostazioni del sito e riprova.");
-      } else if (e && e.name === "NotFoundError") {
-        showError("Nessun microfono trovato su questo dispositivo.");
-      } else {
-        showError("Impossibile accedere al microfono su questo browser/dispositivo.");
+      // ...E POI facciamo partire il Riconoscimento Vocale
+      recognition = buildRecognitionInstance();
+      if (recognition) {
+        recognition.start();
+        setMode("awake");
       }
-      setMode("error");
-      return;
-    }
-
-    recognition = buildRecognitionInstance();
-    if (!recognition) return;
-    try {
-      recognition.start();
-      lastRecognitionActivity = Date.now();
-      setMode("awake");
-      startAnalyser();
-      startWatchdog();
     } catch (e) {
-      showError("Impossibile avviare il microfono. Ricarica la pagina e riprova.");
+      showError("Impossibile avviare il microfono in modo congiunto.");
       setMode("error");
     }
   }
 
   function stopListening() {
     setMode("off");
-    stopWatchdog();
-    if (recognition) { recognition.onend = null; try { recognition.stop(); } catch (e) {} recognition = null; }
+    if (recognition) { recognition.onend = null; try{ recognition.stop(); }catch(e){} recognition = null; }
     if (silenceTimer) clearTimeout(silenceTimer);
     window.speechSynthesis && window.speechSynthesis.cancel();
-    stopAnalyser();
+    if (rafId) cancelAnimationFrame(rafId);
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    if (audioCtx) audioCtx.close().catch(() => {});
+    level = 0; setMicGauge(0); updateOrbSize();
     els.interimText.textContent = "";
     commandBuffer = "";
   }
 
-  els.toggleBtn.addEventListener('click', () => {
-    (mode === "off" || mode === "error") ? startListening() : stopListening();
-  });
-
-  els.muteBtn.addEventListener('click', () => {
-    muted = !muted;
-    els.muteBtn.textContent = muted ? "Audio disattivato" : "Silenzia risposta";
-    els.muteBtn.style.color = muted ? "#FF6B6B" : "#4FC3F7";
-  });
-
-  els.manualForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const val = els.manualInput.value.trim();
-    if (!val) return;
-    askJarvis(val);
-    els.manualInput.value = "";
-  });
-
+  els.toggleBtn.addEventListener('click', () => { (mode === "off" || mode === "error") ? startListening() : stopListening(); });
+  els.muteBtn.addEventListener('click', () => { muted = !muted; els.muteBtn.textContent = muted ? "Audio disattivato" : "Silenzia risposta"; els.muteBtn.style.color = muted ? "#FF6B6B" : "#4FC3F7"; });
+  els.manualForm.addEventListener('submit', (e) => { e.preventDefault(); const val = els.manualInput.value.trim(); if (!val) return; askJarvis(val); els.manualInput.value = ""; });
   window.addEventListener('beforeunload', () => { stopListening(); });
 
   setMode("off");
