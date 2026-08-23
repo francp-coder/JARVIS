@@ -192,7 +192,7 @@
   <div class="header">
     <h1>J.A.R.V.I.S.</h1>
   </div>
-  <div class="version">SISTEMA VOCALE PERSONALE · DEEPSEEK V3</div>
+  <div class="version">SISTEMA VOCALE PERSONALE</div>
 
   <div class="status" id="statusLine">
     <span class="dot" id="statusDot"></span>
@@ -241,6 +241,8 @@
   <div class="footnote">
     Tieni questa finestra aperta e in primo piano perché Jarvis continui ad ascoltare.
     Non ascolta a schermo spento o ridotto a icona: è un limite dei browser, non di Jarvis.
+    L'apertura di app come Spotify o Discord chiederà sempre una conferma del browser:
+    è una protezione di sicurezza che nessun sito può disattivare.
   </div>
 
 <script>
@@ -263,6 +265,7 @@
   let commandBuffer = "";
   let level = 0;
   let audioCtx = null, analyser = null, stream = null, rafId = null;
+  let cachedVoice = null;
 
   const els = {
     statusDot: document.getElementById('statusDot'),
@@ -330,7 +333,63 @@
     els.core.style.background = `radial-gradient(circle at 38% 32%, #FFFFFF 0%, ${color} 35%, #05263A 78%)`;
   }
 
-  function addLogEntry(role, text, isHTML = false) {
+  // ---------- Estrazione e resa dei link ----------
+  function extractAndRenderLinks(rawText) {
+    const linkPattern = /\[([^\]]+)\]\(([^\s)]+)\)/g;
+    const rawUrlPattern = /(https?:\/\/[^\s<]+)/g;
+    let htmlAnswer = rawText;
+    let spokenText = rawText;
+    const links = [];
+
+    let match;
+    while ((match = linkPattern.exec(rawText)) !== null) {
+      const label = match[1];
+      let url = match[2].replace(/[.,;:!)]+$/, "");
+      links.push(url);
+      htmlAnswer = htmlAnswer.replace(match[0], `[[LINK:${links.length - 1}]]`);
+      spokenText = spokenText.replace(match[0], label);
+    }
+    // link "nudi" non in formato markdown
+    let raw;
+    while ((raw = rawUrlPattern.exec(htmlAnswer)) !== null) {
+      let url = raw[1].replace(/[.,;:!)]+$/, "");
+      if (!links.includes(url)) {
+        links.push(url);
+        htmlAnswer = htmlAnswer.replace(raw[0], `[[LINK:${links.length - 1}]]`);
+        spokenText = spokenText.replace(raw[0], "");
+      }
+    }
+
+    links.forEach((url, i) => {
+      const label = url.length > 46 ? url.slice(0, 46) + "…" : url;
+      htmlAnswer = htmlAnswer.replaceAll(`[[LINK:${i}]]`, `__LINKPLACEHOLDER_${i}__`);
+    });
+
+    spokenText = spokenText.replace(/\s{2,}/g, " ").trim();
+    return { htmlAnswer, spokenText, links };
+  }
+
+  function tryOpenLink(url) {
+    if (/^https?:\/\//i.test(url)) {
+      const opened = window.open(url, "_blank");
+      return !!(opened && !opened.closed);
+    }
+    // link non-http (es. spotify:, discord:) -> il browser mostrerà
+    // sempre una richiesta di conferma per aprire l'app, se installata
+    try {
+      const a = document.createElement("a");
+      a.href = url;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function addLogEntry(role, rawText) {
     els.logEmpty.style.display = "none";
     const entry = document.createElement("div");
     entry.className = "entry";
@@ -338,16 +397,43 @@
     roleEl.className = "entry-role";
     roleEl.style.color = role === "user" ? "#7FE3FF" : "#FFB454";
     roleEl.textContent = role === "user" ? "TU" : "JARVIS";
-    
     const textEl = document.createElement("div");
     textEl.className = "entry-text";
-    
-    if (isHTML) {
-        textEl.innerHTML = text;
+
+    if (role === "jarvis") {
+      const { htmlAnswer, links } = extractAndRenderLinks(rawText);
+      const parts = htmlAnswer.split(/(__LINKPLACEHOLDER_\d+__)/g);
+      let anyLinkFailed = false;
+      parts.forEach((part) => {
+        const ph = part.match(/^__LINKPLACEHOLDER_(\d+)__$/);
+        if (ph) {
+          const idx = parseInt(ph[1], 10);
+          const url = links[idx];
+          const a = document.createElement("a");
+          a.href = url;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.className = "jarvis-link";
+          a.textContent = url.length > 46 ? url.slice(0, 46) + "…" : url;
+          textEl.appendChild(document.createElement("br"));
+          textEl.appendChild(a);
+        } else if (part) {
+          textEl.appendChild(document.createTextNode(part));
+        }
+      });
+      if (links.length > 0) {
+        const ok = tryOpenLink(links[0]);
+        if (!ok) {
+          const note = document.createElement("span");
+          note.className = "popup-note";
+          note.textContent = "Il browser ha bloccato l'apertura automatica — usa il pulsante qui sopra.";
+          textEl.appendChild(note);
+        }
+      }
     } else {
-        textEl.textContent = text;
+      textEl.textContent = rawText;
     }
-    
+
     entry.appendChild(roleEl);
     entry.appendChild(textEl);
     els.log.appendChild(entry);
@@ -373,63 +459,10 @@
         body: JSON.stringify({ question })
       });
       const data = await response.json();
-      let rawAnswer = (data.text || "Non sono riuscito a elaborare una risposta.").trim();
-
-      // ====================================================
-      // GESTIONE DEI LINK (Supporta App Deep Links come discord:// e HTTP)
-      // ====================================================
-      // Questa regex universale cattura QUALSIASI stringa url dentro le parentesi tonde
-      const regexMarkdown = /\[([^\]]+)\]\s*\(\s*([^\s\)]+)\s*\)/g;
-      
-      let htmlAnswer = rawAnswer;
-      let speechAnswer = rawAnswer;
-      let linksToOpen = [];
-
-      let match;
-      while ((match = regexMarkdown.exec(rawAnswer)) !== null) {
-          let fullMatch = match[0];
-          let text = match[1];
-          let url = match[2];
-          
-          url = url.replace(/[\.,;:!\)]+$/, '');
-          linksToOpen.push(url);
-          
-          htmlAnswer = htmlAnswer.replace(fullMatch, `<a href="${url}" target="_blank" class="jarvis-link">${text}</a>`);
-          speechAnswer = speechAnswer.replace(fullMatch, text);
-      }
-
-      // Gestione URL grezzi (solo web http/https, ignora le app)
-      const regexRawUrl = /(?<!href="|'|>)(https?:\/\/[^\s\)<>]+)/g;
-      while ((match = regexRawUrl.exec(htmlAnswer)) !== null) {
-          let url = match[1];
-          url = url.replace(/[\.,;:!]+$/, '');
-          
-          if (!linksToOpen.includes(url)) {
-              linksToOpen.push(url);
-          }
-          
-          htmlAnswer = htmlAnswer.replace(match[1], `<a href="${url}" target="_blank" class="jarvis-link">${url}</a>`);
-          speechAnswer = speechAnswer.replace(match[1], "");
-      }
-
-      htmlAnswer = htmlAnswer.replace(/\n/g, '<br>');
-      speechAnswer = speechAnswer.replace(/\*/g, "").trim();
-
-      // ====================================================
-      // AZIONI FINALI: APERTURA INTELLIGENTE APP / TAB
-      // ====================================================
-      linksToOpen.forEach(url => {
-          if (url.toLowerCase().startsWith('http')) {
-              window.open(url, '_blank');
-          } else {
-              // Metodo di reindirizzamento standard per App (Deep Links)
-              window.location.href = url; 
-          }
-      });
-      
-      addLogEntry("jarvis", htmlAnswer, true);
-      speak(speechAnswer);
-
+      const answer = (data.text || "Non sono riuscito a elaborare una risposta.").trim();
+      addLogEntry("jarvis", answer);
+      const { spokenText } = extractAndRenderLinks(answer);
+      speak(spokenText || answer);
     } catch (e) {
       const msg = "Ho avuto un problema a contattare il server. Riprova.";
       addLogEntry("jarvis", msg);
@@ -437,44 +470,48 @@
     }
   }
 
+  // ---------- Selezione voce femminile italiana ----------
+  function pickFemaleItalianVoice(voices) {
+    const itVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith("it"));
+    if (itVoices.length === 0) return null;
+    const femaleHints = ["elsa", "alice", "federica", "isabella", "elisa", "paola", "silvia", "chiara", "francesca", "valentina", "female", "google italiano"];
+    const maleHints = ["diego", "luca", "cosimo", "roberto", "marco", "giorgio", "male"];
+    let candidate = itVoices.find(v => {
+      const n = v.name.toLowerCase();
+      return femaleHints.some(h => n.includes(h)) && !maleHints.some(h => n.includes(h));
+    });
+    if (!candidate) candidate = itVoices.find(v => !maleHints.some(h => v.name.toLowerCase().includes(h)));
+    if (!candidate) candidate = itVoices[0];
+    return candidate;
+  }
+
   function speak(text) {
     if (muted || !("speechSynthesis" in window)) { setMode(mode === "off" ? "off" : "awake"); return; }
-    
-    // Ferma l'audio precedente per non sovrapporsi
     window.speechSynthesis.cancel();
-    
-    // Usiamo setTimeout per evitare un noto crash del browser Chrome quando si usa cancel() 
     setTimeout(() => {
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = "it-IT";
-        
-        // Tono e velocità ottimizzati per una voce naturale
-        utter.rate = 1.0; 
-        utter.pitch = 1.1; 
-        
-        const voices = window.speechSynthesis.getVoices();
-        let itVoices = voices.filter(v => v.lang.toLowerCase().startsWith("it"));
-        
-        // Cerca voci Premium fluide
-        let preferredVoice = itVoices.find(v => 
-            v.name.includes("Natural") || 
-            v.name.includes("Online") || 
-            v.name.includes("Elsa") || 
-            v.name.includes("Google italiano")
-        );
-        
-        if (preferredVoice) {
-            utter.voice = preferredVoice;
-        } else if (itVoices.length > 0) {
-            utter.voice = itVoices[0]; 
-        }
-        
-        utter.onend = () => setMode(mode === "off" ? "off" : "awake");
-        utter.onerror = () => setMode(mode === "off" ? "off" : "awake");
-        
-        setMode("speaking");
-        window.speechSynthesis.speak(utter);
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "it-IT";
+      utter.rate = 1.02;
+      utter.pitch = 1.12;
+
+      if (!cachedVoice) {
+        cachedVoice = pickFemaleItalianVoice(window.speechSynthesis.getVoices());
+      }
+      if (cachedVoice) utter.voice = cachedVoice;
+
+      utter.onend = () => setMode(mode === "off" ? "off" : "awake");
+      utter.onerror = () => setMode(mode === "off" ? "off" : "awake");
+      setMode("speaking");
+      window.speechSynthesis.speak(utter);
     }, 50);
+  }
+
+  // Le voci si caricano in modo asincrono su alcuni browser: le recuperiamo
+  // appena sono pronte così la voce femminile è già scelta al primo utilizzo.
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      cachedVoice = pickFemaleItalianVoice(window.speechSynthesis.getVoices());
+    };
   }
 
   function resetSilenceTimer() {
