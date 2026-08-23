@@ -373,18 +373,16 @@
         body: JSON.stringify({ question })
       });
       const data = await response.json();
-      
-      // ====================================================
-      // GESTIONE DEI LINK (Inclusi App Deep Links)
-      // ====================================================
-      let linksToOpen = [];
       let rawAnswer = (data.text || "Non sono riuscito a elaborare una risposta.").trim();
 
-      // 1. Regex sicura: accetta http, https, discord, spotify, tg, whatsapp, ecc.
-      const regexMarkdown = /\[([^\]]+)\]\s*\(\s*([a-zA-Z0-9.\-]+:\/\/[^\s\)]*)\s*\)/g;
+      // ====================================================
+      // GESTIONE DEI LINK (Reso tollerante anche alla punteggiatura finale)
+      // ====================================================
+      const regexMarkdown = /\[([^\]]+)\]\s*\(\s*(https?:\/\/[^\s\)]+)\s*\)/g;
       
       let htmlAnswer = rawAnswer;
       let speechAnswer = rawAnswer;
+      let linksToOpen = [];
 
       let match;
       while ((match = regexMarkdown.exec(rawAnswer)) !== null) {
@@ -392,14 +390,16 @@
           let text = match[1];
           let url = match[2];
           
+          // Pulisce l'URL da eventuale punteggiatura finale rimasta (es. punto o virgola prima/dopo)
           url = url.replace(/[\.,;:!\)]+$/, '');
+          
           linksToOpen.push(url);
           
           htmlAnswer = htmlAnswer.replace(fullMatch, `<a href="${url}" target="_blank" class="jarvis-link">${text}</a>`);
           speechAnswer = speechAnswer.replace(fullMatch, text);
       }
 
-      // 2. URL grezzi (solo http/https)
+      // Gestione URL grezzi
       const regexRawUrl = /(?<!href="|'|>)(https?:\/\/[^\s\)<>]+)/g;
       while ((match = regexRawUrl.exec(htmlAnswer)) !== null) {
           let url = match[1];
@@ -416,15 +416,8 @@
       htmlAnswer = htmlAnswer.replace(/\n/g, '<br>');
       speechAnswer = speechAnswer.replace(/\*/g, "").trim();
 
-      // 3. Esegui apertura link
-      linksToOpen.forEach(url => {
-          if (url.startsWith('http')) {
-              window.open(url, '_blank');
-          } else {
-              window.location.href = url; // Apre le app locali (es. discord://)
-          }
-      });
-      
+      // Azioni finali
+      linksToOpen.forEach(url => window.open(url, '_blank'));
       addLogEntry("jarvis", htmlAnswer, true);
       speak(speechAnswer);
 
