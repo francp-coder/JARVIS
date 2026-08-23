@@ -590,7 +590,7 @@
   let silenceTimer = null;
   let commandBuffer = "";
   let level = 0;
-  let audioCtx = null, analyser = null, stream = null, rafId = null;
+  let rafId = null;
   let cachedVoice = null;
   let lastRecognitionActivity = 0;
   let watchdogInterval = null;
@@ -738,29 +738,7 @@
     waveCtx.stroke();
   }
   drawWaveformIdle();
-  window.addEventListener('resize', () => { if (!analyser) drawWaveformIdle(); });
-
-  function drawWaveformLive() {
-    if (!analyser || !waveCtx) { rafWave = requestAnimationFrame(drawWaveformLive); return; }
-    const bufferLength = analyser.fftSize;
-    const dataArray = new Uint8Array(bufferLength);
-    analyser.getByteTimeDomainData(dataArray);
-    const w = els.waveform.width, h = els.waveform.height;
-    waveCtx.clearRect(0, 0, w, h);
-    waveCtx.strokeStyle = mode === 'capturing' ? '#7FE3FF' : '#4FC3F7';
-    waveCtx.lineWidth = 2;
-    waveCtx.beginPath();
-    const slice = w / bufferLength;
-    let x = 0;
-    for (let i = 0; i < bufferLength; i++) {
-      const v = dataArray[i] / 128.0;
-      const y = (v * h) / 2;
-      if (i === 0) waveCtx.moveTo(x, y); else waveCtx.lineTo(x, y);
-      x += slice;
-    }
-    waveCtx.stroke();
-    rafWave = requestAnimationFrame(drawWaveformLive);
-  }
+  window.addEventListener('resize', () => { if (mode === 'off') drawWaveformIdle(); });
   let rafWave = null;
 
   // ---------- Orologio nel chip identità ----------
@@ -1121,15 +1099,16 @@
     r.maxAlternatives = 1;
 
     r.onstart = () => { lastRecognitionActivity = Date.now(); clearError(); logDiagEvent('onstart'); };
-    r.onaudiostart = () => { logDiagEvent('onaudiostart (mic collegato)'); };
-    r.onsoundstart = () => { logDiagEvent('onsoundstart (suono rilevato)'); };
-    r.onspeechstart = () => { logDiagEvent('onspeechstart (voce rilevata)'); };
+    r.onaudiostart = () => { logDiagEvent('onaudiostart (mic collegato)'); bumpLevel(0.15); };
+    r.onsoundstart = () => { logDiagEvent('onsoundstart (suono rilevato)'); bumpLevel(0.5); };
+    r.onspeechstart = () => { logDiagEvent('onspeechstart (voce rilevata)'); bumpLevel(0.9); };
     r.onspeechend = () => { logDiagEvent('onspeechend'); };
     r.onaudioend = () => { logDiagEvent('onaudioend'); };
 
     r.onresult = (event) => {
       lastRecognitionActivity = Date.now();
       logDiagEvent('onresult');
+      bumpLevel(0.7);
       let finalChunk = "", interimChunk = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const t = event.results[i][0].transcript;
@@ -1159,6 +1138,7 @@
 
     r.onerror = (event) => {
       lastRecognitionActivity = Date.now();
+      logDiagEvent('onerror: ' + event.error);
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
         showError("Accesso al microfono negato. Consenti l'uso del microfono nelle impostazioni del sito (icona del lucchetto nella barra degli indirizzi) e riattiva Jarvis.");
         setMode("error");
@@ -1213,52 +1193,77 @@
     watchdogInterval = null;
   }
 
-  async function startAnalyser() {
-    try {
-      if (!stream) stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioCtx.createMediaStreamSource(stream);
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      const tick = () => {
-        analyser.getByteFrequencyData(data);
-        const avg = data.reduce((a, b) => a + b, 0) / data.length;
-        level = Math.min(1, avg / 90);
-        setMicGauge(level);
-        updateOrbSize();
-        rafId = requestAnimationFrame(tick);
-      };
-      tick();
-      if (rafWave) cancelAnimationFrame(rafWave);
-      drawWaveformLive();
-    } catch (e) { /* l'orb non reagirà al volume, non blocca il funzionamento */ }
+  // Animazione "sintetica" del reattore/oscilloscopio: NON usa un secondo
+  // accesso al microfono (per non entrare in conflitto con il riconoscimento
+  // vocale, che deve rimanere l'unico a usare l'audio in ingresso). Il
+  // livello mostrato reagisce agli eventi reali che il riconoscimento
+  // vocale ci comunica (onspeechstart/onresult), con un piccolo decadimento
+  // per dare un effetto fluido.
+  let targetLevel = 0;
+
+  function bumpLevel(v) {
+    targetLevel = Math.max(targetLevel, v);
+  }
+
+  function startAnalyser() {
+    stopAnalyser();
+    const tick = () => {
+      // decadimento morbido verso 0 (o verso un leggero "respiro" quando in ascolto)
+      const floor = (mode === "awake" || mode === "capturing") ? 0.05 + 0.03 * Math.sin(Date.now() / 500) : 0;
+      level += (Math.max(targetLevel, floor) - level) * 0.25;
+      targetLevel *= 0.85;
+      setMicGauge(level);
+      updateOrbSize();
+      drawWaveformSynthetic();
+      rafId = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+
+  function drawWaveformSynthetic() {
+    if (!waveCtx) waveCtx = els.waveform.getContext('2d');
+    const w = els.waveform.width || (els.waveform.width = els.waveform.clientWidth * (window.devicePixelRatio || 1));
+    const h = els.waveform.height || (els.waveform.height = 34 * (window.devicePixelRatio || 1));
+    waveCtx.clearRect(0, 0, w, h);
+    waveCtx.strokeStyle = mode === 'capturing' ? '#7FE3FF' : '#4FC3F7';
+    waveCtx.lineWidth = 2;
+    waveCtx.beginPath();
+    const points = 48;
+    for (let i = 0; i <= points; i++) {
+      const x = (i / points) * w;
+      const t = Date.now() / 140 + i * 0.6;
+      const amp = (0.15 + level * 0.85) * (h / 2.4);
+      const y = h / 2 + Math.sin(t) * amp * (0.5 + 0.5 * Math.sin(i * 0.7));
+      if (i === 0) waveCtx.moveTo(x, y); else waveCtx.lineTo(x, y);
+    }
+    waveCtx.stroke();
   }
 
   function stopAnalyser() {
     if (rafId) cancelAnimationFrame(rafId);
     if (rafWave) cancelAnimationFrame(rafWave);
-    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-    if (audioCtx) audioCtx.close().catch(() => {});
-    analyser = null;
     level = 0;
+    targetLevel = 0;
     setMicGauge(0);
     updateOrbSize();
     drawWaveformIdle();
   }
 
-  // Richiede esplicitamente il permesso al microfono PRIMA di avviare il
-  // riconoscimento vocale: su molti browser, se questo permesso non è
-  // ancora stato concesso, l'avvio "silenzioso" di SpeechRecognition
-  // fallisce senza un errore chiaro. Chiedendolo prima, l'utente vede
-  // subito il popup di autorizzazione del browser.
+  // Richiede il permesso al microfono e SUBITO DOPO rilascia lo stream.
+  // IMPORTANTE: prima tenevamo questo stream aperto per far reagire il
+  // reattore/oscilloscopio al volume della voce, ma su molti PC questo
+  // secondo accesso al microfono entra in conflitto con quello usato
+  // internamente dal riconoscimento vocale di Chrome, che di conseguenza
+  // non riceve più audio reale (si vede in diagnostica: "onaudiostart"
+  // seguito subito da "onaudioend" senza mai "onspeechstart"/"onresult").
+  // Per questo qui chiediamo il permesso solo per far comparire il popup
+  // di autorizzazione, poi lo rilasciamo immediatamente.
   async function ensureMicPermission() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error("unsupported");
     }
     const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream = s;
+    s.getTracks().forEach(t => t.stop());
     return true;
   }
 
