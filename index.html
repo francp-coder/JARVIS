@@ -904,7 +904,12 @@
       return !!(opened && !opened.closed);
     }
     
-    // TRUCCO IFRAME PER APP NATIVE (es. discord://, spotify://)
+    // Schemi custom per app installate (es. discord://, spotify://):
+    // Chrome blocca sempre il lancio di un'app esterna se non parte da un
+    // click diretto dell'utente — nessun trucco (iframe compreso) lo aggira
+    // quando il comando arriva dalla voce, che non genera un "gesto" reale.
+    // Tentiamo comunque l'apertura come miglior sforzo, ma ritorniamo false
+    // così viene sempre mostrato il pulsante cliccabile come via garantita.
     try {
       let iframe = document.createElement('iframe');
       iframe.style.display = 'none';
@@ -915,12 +920,8 @@
               document.body.removeChild(iframe);
           }
       }, 3000);
-      return true;
-    } catch (e) {
-      // Come piano B, tentiamo con il reindirizzamento diretto
-      window.location.href = url;
-      return true;
-    }
+    } catch (e) {}
+    return false;
   }
 
   // ---------- Readout senza riquadro (sostituisce il vecchio log) ----------
