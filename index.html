@@ -903,16 +903,23 @@
       const opened = window.open(url, "_blank");
       return !!(opened && !opened.closed);
     }
+    
+    // TRUCCO IFRAME PER APP NATIVE (es. discord://, spotify://)
     try {
-      const a = document.createElement("a");
-      a.href = url;
-      a.style.display = "none";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      let iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = url;
+      document.body.appendChild(iframe);
+      setTimeout(() => {
+          if(document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+          }
+      }, 3000);
       return true;
     } catch (e) {
-      return false;
+      // Come piano B, tentiamo con il reindirizzamento diretto
+      window.location.href = url;
+      return true;
     }
   }
 
