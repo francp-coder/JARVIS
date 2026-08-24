@@ -898,30 +898,22 @@
     return { htmlAnswer, spokenText, links };
   }
 
+  // ---------- COMANDO UNIVERSALE DI APERTURA ----------
+  // Un'unica funzione per aprire qualunque link, sia web (https://...) sia
+  // app installate (spotify:, discord:, ecc.). Usiamo window.open per
+  // entrambi i casi: è il metodo standard che i browser riconoscono per
+  // mostrare/ricordare il permesso "apri sempre questa app", a differenza
+  // del trucco iframe (meno affidabile e già ignorato da Chrome in alcuni
+  // casi). La prima volta che apri un'app diversa da Spotify, Chrome ti
+  // chiederà "Apri sempre i link discord: con Discord?": conferma quella
+  // finestra e da quel momento in poi si aprirà in automatico come Spotify.
   function tryOpenLink(url) {
-    if (/^https?:\/\//i.test(url)) {
+    try {
       const opened = window.open(url, "_blank");
       return !!(opened && !opened.closed);
+    } catch (e) {
+      return false;
     }
-    
-    // Schemi custom per app installate (es. discord://, spotify://):
-    // Chrome blocca sempre il lancio di un'app esterna se non parte da un
-    // click diretto dell'utente — nessun trucco (iframe compreso) lo aggira
-    // quando il comando arriva dalla voce, che non genera un "gesto" reale.
-    // Tentiamo comunque l'apertura come miglior sforzo, ma ritorniamo false
-    // così viene sempre mostrato il pulsante cliccabile come via garantita.
-    try {
-      let iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = url;
-      document.body.appendChild(iframe);
-      setTimeout(() => {
-          if(document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-          }
-      }, 3000);
-    } catch (e) {}
-    return false;
   }
 
   // ---------- Readout senza riquadro (sostituisce il vecchio log) ----------
