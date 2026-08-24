@@ -890,12 +890,23 @@
       }
     }
 
-    links.forEach((url, i) => {
+  // Qui sono stati rimossi i fallback per Discord e Spotify
+  // in modo da forzare l'apertura delle loro applicazioni native.
+  const BROKEN_APP_LINK_FALLBACKS = {
+    'youtube://': 'https://www.youtube.com',
+    'youtube:': 'https://www.youtube.com',
+  };
+  function normalizeLink(url) {
+    const key = url.trim();
+    return BROKEN_APP_LINK_FALLBACKS[key] || url;
+  }
+
+  links.forEach((url, i) => {
       htmlAnswer = htmlAnswer.replaceAll(`[[LINK:${i}]]`, `__LINKPLACEHOLDER_${i}__`);
     });
 
     spokenText = spokenText.replace(/\s{2,}/g, " ").trim();
-    return { htmlAnswer, spokenText, links };
+    return { htmlAnswer, spokenText, links: links.map(normalizeLink) };
   }
 
   // ---------- COMANDO UNIVERSALE DI APERTURA ----------
