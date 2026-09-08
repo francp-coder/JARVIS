@@ -2,13 +2,16 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>J.A.R.V.I.S. — Stark Industries HUD</title>
+  
+  <!-- Font Google -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-
+  
   <style>
+    /* ===== VARIABILI ===== */
     :root {
       --bg: #01060d;
       --bg-soft: #03111e;
@@ -27,129 +30,666 @@
       --glow: 0 0 6px rgba(39, 191, 255, 0.7), 0 0 20px rgba(39, 191, 255, 0.28);
     }
 
-    * { box-sizing: border-box; }
-    html, body { width: 100%; min-height: 100%; margin: 0; background: var(--bg); }
-    body { color: var(--white); font-family: "Share Tech Mono", monospace; overflow-x: hidden; }
+    /* ===== RESET & BASE ===== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; min-height: 100vh; background: var(--bg); color: var(--white); font-family: "Share Tech Mono", monospace; overflow-x: hidden; }
     button, input { font: inherit; }
-    button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--cyan-bright); outline-offset: 3px; }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--cyan-bright); outline-offset: 3px; }
 
-    /* SFONDO HUD */
-    .hud-background { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: radial-gradient(circle at 50% 43%, rgba(18, 154, 214, 0.25), rgba(7, 59, 92, 0.13) 28%, transparent 53%), linear-gradient(180deg, rgba(7, 27, 47, 0.97), rgba(1, 6, 13, 0.99)); }
-    .hud-background::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(59, 188, 244, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 188, 244, 0.07) 1px, transparent 1px); background-size: 34px 34px; mask-image: radial-gradient(ellipse at center, black 5%, transparent 88%); }
-    .hud-background::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0, transparent 3px, rgba(125, 227, 255, 0.04) 4px); animation: flicker 8s linear infinite; }
-    .background-radar { position: fixed; z-index: 0; top: 45%; left: 50%; width: min(940px, 98vw); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; background: repeating-radial-gradient(circle, transparent 0, transparent 66px, rgba(72, 191, 237, 0.04) 67px, transparent 68px); }
-    .background-radar::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: conic-gradient(rgba(55, 196, 255, 0.13), transparent 15%, transparent 100%); animation: rotateClockwise 18s linear infinite; }
-    .global-scanline { position: fixed; z-index: 100; top: -10px; left: 0; width: 100%; height: 3px; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(151, 236, 255, 0.25), rgba(151, 236, 255, 0.75), rgba(151, 236, 255, 0.25), transparent); box-shadow: 0 0 18px rgba(82, 207, 255, 0.5); animation: scanPage 8s linear infinite; }
+    /* ===== SFONDO HUD ===== */
+    .hud-background {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 43%, rgba(18, 154, 214, 0.25), rgba(7, 59, 92, 0.13) 28%, transparent 53%),
+                  linear-gradient(180deg, rgba(7, 27, 47, 0.97), rgba(1, 6, 13, 0.99));
+    }
+    .hud-background::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(59, 188, 244, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59, 188, 244, 0.07) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(ellipse at center, black 5%, transparent 88%);
+    }
+    .hud-background::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent 0, transparent 3px, rgba(125, 227, 255, 0.04) 4px);
+      animation: flicker 8s linear infinite;
+    }
+    .background-radar {
+      position: fixed;
+      z-index: 0;
+      top: 45%;
+      left: 50%;
+      width: min(940px, 98vw);
+      aspect-ratio: 1;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      pointer-events: none;
+      background: repeating-radial-gradient(circle, transparent 0, transparent 66px, rgba(72, 191, 237, 0.04) 67px, transparent 68px);
+    }
+    .background-radar::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: conic-gradient(rgba(55, 196, 255, 0.13), transparent 15%, transparent 100%);
+      animation: rotateClockwise 18s linear infinite;
+    }
+    .global-scanline {
+      position: fixed;
+      z-index: 100;
+      top: -10px;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(151, 236, 255, 0.25), rgba(151, 236, 255, 0.75), rgba(151, 236, 255, 0.25), transparent);
+      box-shadow: 0 0 18px rgba(82, 207, 255, 0.5);
+      animation: scanPage 8s linear infinite;
+    }
 
     @keyframes scanPage { from { top: -10px; } to { top: 110vh; } }
     @keyframes flicker { 0%, 95%, 100% { opacity: 1; } 96% { opacity: 0.72; } 97% { opacity: 1; } 98% { opacity: 0.84; } }
     @keyframes rotateClockwise { to { transform: rotate(360deg); } }
     @keyframes rotateCounter { to { transform: rotate(-360deg); } }
 
-    /* LAYOUT */
-    .jarvis-app { position: relative; z-index: 2; width: 100%; min-height: 100vh; display: grid; grid-template-rows: auto minmax(520px, 1fr) auto; gap: 9px; padding: max(9px, env(safe-area-inset-top)) max(11px, env(safe-area-inset-right)) max(11px, env(safe-area-inset-bottom)) max(11px, env(safe-area-inset-left)); }
+    /* ===== LAYOUT PRINCIPALE ===== */
+    .jarvis-app {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto minmax(520px, 1fr) auto;
+      gap: 9px;
+      padding: 9px 11px;
+    }
 
-    /* BARRA SUPERIORE */
-    .top-navigation { min-height: 67px; display: grid; grid-template-columns: minmax(230px, 1fr) auto minmax(230px, 1fr); align-items: center; gap: 18px; padding: 7px 14px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: linear-gradient(90deg, rgba(6, 33, 55, 0.86), rgba(3, 20, 36, 0.42), rgba(6, 33, 55, 0.86)); box-shadow: inset 0 0 20px rgba(37, 176, 236, 0.07); }
+    /* ===== BARRA SUPERIORE ===== */
+    .top-navigation {
+      min-height: 67px;
+      display: grid;
+      grid-template-columns: minmax(230px, 1fr) auto minmax(230px, 1fr);
+      align-items: center;
+      gap: 18px;
+      padding: 7px 14px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, rgba(6, 33, 55, 0.86), rgba(3, 20, 36, 0.42), rgba(6, 33, 55, 0.86));
+      box-shadow: inset 0 0 20px rgba(37, 176, 236, 0.07);
+    }
     .brand-group { display: flex; align-items: center; gap: 12px; }
-    .brand-mark { width: 43px; height: 43px; border: 1px solid var(--cyan); border-radius: 50%; display: grid; place-items: center; color: var(--cyan-bright); font-family: "Orbitron", sans-serif; font-size: 12px; font-weight: 800; box-shadow: inset 0 0 15px rgba(39, 191, 255, 0.18), var(--glow); }
-    .brand-copy h1 { margin: 0; color: var(--cyan-bright); font-family: "Orbitron", sans-serif; font-size: clamp(18px, 2vw, 28px); font-weight: 800; letter-spacing: 0.18em; text-shadow: var(--glow); }
-    .brand-copy p { margin: 3px 0 0; color: var(--muted); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; }
-    .system-tabs { display: flex; justify-content: center; gap: 17px; color: var(--muted); font-family: "Orbitron", sans-serif; font-size: 8px; letter-spacing: 0.13em; text-transform: uppercase; }
-    .system-tabs span { padding-bottom: 5px; border-bottom: 1px solid transparent; }
-    .system-tabs .active { color: var(--cyan-bright); border-color: var(--cyan); text-shadow: var(--glow); }
-    .identity-panel { justify-self: end; min-width: 225px; display: grid; grid-template-columns: 40px 1fr; align-items: center; gap: 10px; padding: 6px 10px; border: 1px solid var(--line); background: rgba(7, 42, 67, 0.58); }
-    .identity-avatar { width: 38px; height: 38px; overflow: hidden; border: 1px solid var(--cyan); border-radius: 50%; background: radial-gradient(circle at 50% 33%, rgba(126, 230, 255, 0.95) 0 11%, transparent 12%), radial-gradient(circle, rgba(27, 113, 156, 0.75), rgba(2, 14, 25, 0.9)); box-shadow: inset 0 0 12px rgba(67, 197, 255, 0.4); }
-    .identity-title { color: var(--cyan-bright); font-family: "Orbitron", sans-serif; font-size: 9px; letter-spacing: 0.1em; }
-    .identity-line { margin-top: 3px; color: var(--muted); font-size: 9px; }
-    .identity-clock { color: var(--white); font-size: 12px; }
+    .brand-mark {
+      width: 43px;
+      height: 43px;
+      border: 1px solid var(--cyan);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: var(--cyan-bright);
+      font-family: "Orbitron", sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: inset 0 0 15px rgba(39, 191, 255, 0.18), var(--glow);
+    }
+    .brand-copy h1 {
+      margin: 0;
+      color: var(--cyan-bright);
+      font-family: "Orbitron", sans-serif;
+      font-size: clamp(18px, 2vw, 28px);
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-shadow: var(--glow);
+    }
+    .brand-copy p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .system-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 17px;
+      color: var(--muted);
+      font-family: "Orbitron", sans-serif;
+      font-size: 8px;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+    .system-tabs span {
+      padding-bottom: 5px;
+      border-bottom: 1px solid transparent;
+      cursor: default;
+    }
+    .system-tabs .active {
+      color: var(--cyan-bright);
+      border-color: var(--cyan);
+      text-shadow: var(--glow);
+    }
+    .identity-panel {
+      justify-self: end;
+      min-width: 225px;
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      background: rgba(7, 42, 67, 0.58);
+    }
+    .identity-avatar {
+      width: 38px;
+      height: 38px;
+      overflow: hidden;
+      border: 1px solid var(--cyan);
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 33%, rgba(126, 230, 255, 0.95) 0 11%, transparent 12%),
+                  radial-gradient(circle, rgba(27, 113, 156, 0.75), rgba(2, 14, 25, 0.9));
+      box-shadow: inset 0 0 12px rgba(67, 197, 255, 0.4);
+    }
+    .identity-title {
+      color: var(--cyan-bright);
+      font-family: "Orbitron", sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+    }
+    .identity-line {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 9px;
+    }
+    .identity-clock {
+      color: var(--white);
+      font-size: 12px;
+    }
 
-    /* COCKPIT */
-    .cockpit { display: grid; grid-template-columns: minmax(205px, 0.88fr) minmax(410px, 1.55fr) minmax(205px, 0.88fr); gap: 10px; min-height: 0; }
-    .side-column { min-height: 0; display: grid; grid-template-rows: repeat(4, minmax(105px, 1fr)); gap: 8px; }
-    .hud-panel { position: relative; min-height: 105px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(135deg, rgba(7, 43, 70, 0.85), rgba(2, 14, 25, 0.7)); box-shadow: inset 0 0 22px rgba(40, 177, 235, 0.07); }
-    .hud-panel::before, .hud-panel::after { content: ""; position: absolute; z-index: 4; width: 17px; height: 17px; pointer-events: none; }
-    .hud-panel::before { top: -1px; left: -1px; border-top: 2px solid var(--cyan-bright); border-left: 2px solid var(--cyan-bright); }
-    .hud-panel::after { right: -1px; bottom: -1px; border-right: 2px solid var(--cyan-bright); border-bottom: 2px solid var(--cyan-bright); }
-    .panel-header { height: 27px; display: flex; align-items: center; justify-content: space-between; padding: 0 9px; border-bottom: 1px solid var(--line-soft); color: var(--cyan-bright); font-family: "Orbitron", sans-serif; font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; background: linear-gradient(90deg, rgba(39, 191, 255, 0.15), transparent); }
-    .panel-indicator { width: 5px; height: 5px; border-radius: 50%; background: var(--cyan-bright); box-shadow: 0 0 4px var(--cyan-bright), 0 0 10px var(--cyan); animation: indicatorPulse 1.4s ease-in-out infinite; }
+    /* ===== COCKPIT ===== */
+    .cockpit {
+      display: grid;
+      grid-template-columns: minmax(205px, 0.88fr) minmax(410px, 1.55fr) minmax(205px, 0.88fr);
+      gap: 10px;
+      min-height: 0;
+    }
+    .side-column {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: repeat(4, minmax(105px, 1fr));
+      gap: 8px;
+    }
+
+    /* ===== PANNELLI HUD ===== */
+    .hud-panel {
+      position: relative;
+      min-height: 105px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(7, 43, 70, 0.85), rgba(2, 14, 25, 0.7));
+      box-shadow: inset 0 0 22px rgba(40, 177, 235, 0.07);
+    }
+    .hud-panel::before,
+    .hud-panel::after {
+      content: "";
+      position: absolute;
+      z-index: 4;
+      width: 17px;
+      height: 17px;
+      pointer-events: none;
+    }
+    .hud-panel::before {
+      top: -1px;
+      left: -1px;
+      border-top: 2px solid var(--cyan-bright);
+      border-left: 2px solid var(--cyan-bright);
+    }
+    .hud-panel::after {
+      right: -1px;
+      bottom: -1px;
+      border-right: 2px solid var(--cyan-bright);
+      border-bottom: 2px solid var(--cyan-bright);
+    }
+    .panel-header {
+      height: 27px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 9px;
+      border-bottom: 1px solid var(--line-soft);
+      color: var(--cyan-bright);
+      font-family: "Orbitron", sans-serif;
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, rgba(39, 191, 255, 0.15), transparent);
+    }
+    .panel-indicator {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--cyan-bright);
+      box-shadow: 0 0 4px var(--cyan-bright), 0 0 10px var(--cyan);
+      animation: indicatorPulse 1.4s ease-in-out infinite;
+    }
     @keyframes indicatorPulse { 50% { opacity: 0.22; } }
-    .panel-content { height: calc(100% - 27px); padding: 9px; }
-    .data-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin-bottom: 5px; color: var(--muted); font-size: 9px; }
-    .data-row strong { color: var(--white); font-weight: 400; text-align: right; }
-    .good { color: var(--green) !important; } .warning { color: var(--yellow) !important; } .error { color: var(--red) !important; }
-    .meter { height: 4px; overflow: hidden; margin: 4px 0 8px; background: rgba(72, 192, 243, 0.11); }
-    .meter-fill { width: 10%; height: 100%; background: linear-gradient(90deg, var(--cyan-dark), var(--cyan-bright)); box-shadow: 0 0 8px rgba(90, 216, 255, 0.7); transition: width 250ms ease; }
+    .panel-content {
+      height: calc(100% - 27px);
+      padding: 9px;
+    }
+    .data-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 9px;
+    }
+    .data-row strong {
+      color: var(--white);
+      font-weight: 400;
+      text-align: right;
+    }
+    .good { color: var(--green) !important; }
+    .warning { color: var(--yellow) !important; }
+    .error { color: var(--red) !important; }
+    .meter {
+      height: 4px;
+      overflow: hidden;
+      margin: 4px 0 8px;
+      background: rgba(72, 192, 243, 0.11);
+    }
+    .meter-fill {
+      width: 10%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--cyan-dark), var(--cyan-bright));
+      box-shadow: 0 0 8px rgba(90, 216, 255, 0.7);
+      transition: width 250ms ease;
+    }
     
-    .chart { width: 100%; height: 100%; min-height: 55px; display: block; }
-    .micro-bars { height: 100%; min-height: 62px; display: flex; align-items: end; gap: 3px; }
-    .micro-bars span { flex: 1; min-width: 2px; height: 10%; opacity: 0.74; background: linear-gradient(to top, rgba(30, 136, 190, 0.38), var(--cyan-bright)); box-shadow: 0 0 4px rgba(76, 205, 255, 0.3); transition: height 100ms linear; }
+    /* Micro-bars */
+    .micro-bars {
+      height: 100%;
+      min-height: 62px;
+      display: flex;
+      align-items: end;
+      gap: 3px;
+    }
+    .micro-bars span {
+      flex: 1;
+      min-width: 2px;
+      height: 10%;
+      opacity: 0.74;
+      background: linear-gradient(to top, rgba(30, 136, 190, 0.38), var(--cyan-bright));
+      box-shadow: 0 0 4px rgba(76, 205, 255, 0.3);
+      transition: height 100ms linear;
+    }
 
-    /* REATTORE CENTRALE */
-    .center-stage { position: relative; min-height: 520px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); background: radial-gradient(circle at center, rgba(24, 167, 226, 0.12), transparent 58%); }
-    .center-stage::before, .center-stage::after { content: ""; position: absolute; top: 50%; left: 50%; pointer-events: none; transform: translate(-50%, -50%); border-radius: 50%; }
-    .center-stage::before { width: min(570px, 90%); aspect-ratio: 1; border: 1px solid rgba(66, 192, 241, 0.14); }
-    .center-stage::after { width: min(470px, 76%); aspect-ratio: 1; border: 1px dashed rgba(66, 192, 241, 0.17); animation: centerOuterRotation 35s linear infinite; }
-    @keyframes centerOuterRotation { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
-    .crosshair { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-    .crosshair::before, .crosshair::after { content: ""; position: absolute; top: 50%; left: 50%; background: linear-gradient(90deg, transparent, rgba(112, 220, 255, 0.19), transparent); }
-    .crosshair::before { width: 100%; height: 1px; transform: translate(-50%, -50%); } .crosshair::after { width: 1px; height: 100%; transform: translate(-50%, -50%); }
+    /* ===== CENTER-STAGE (REATTORE) ===== */
+    .center-stage {
+      position: relative;
+      min-height: 520px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-top: 1px solid var(--line-soft);
+      border-bottom: 1px solid var(--line-soft);
+      background: radial-gradient(circle at center, rgba(24, 167, 226, 0.12), transparent 58%);
+    }
+    .center-stage::before,
+    .center-stage::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+    }
+    .center-stage::before {
+      width: min(570px, 90%);
+      aspect-ratio: 1;
+      border: 1px solid rgba(66, 192, 241, 0.14);
+    }
+    .center-stage::after {
+      width: min(470px, 76%);
+      aspect-ratio: 1;
+      border: 1px dashed rgba(66, 192, 241, 0.17);
+      animation: centerOuterRotation 35s linear infinite;
+    }
+    @keyframes centerOuterRotation {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    .crosshair {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .crosshair::before,
+    .crosshair::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      background: linear-gradient(90deg, transparent, rgba(112, 220, 255, 0.19), transparent);
+    }
+    .crosshair::before { width: 100%; height: 1px; transform: translate(-50%, -50%); }
+    .crosshair::after { width: 1px; height: 100%; transform: translate(-50%, -50%); }
     
-    .reactor-system { position: relative; z-index: 4; width: min(430px, 78vw); aspect-ratio: 1; display: grid; place-items: center; transition: transform 200ms ease, filter 200ms ease; }
-    .reactor-system.listening { filter: drop-shadow(0 0 17px rgba(75, 211, 255, 0.5)); }
-    .reactor-system.capturing { transform: scale(1.035); filter: drop-shadow(0 0 31px rgba(124, 231, 255, 0.78)); }
-    .reactor-system.thinking { filter: drop-shadow(0 0 29px rgba(255, 209, 102, 0.5)); }
+    /* Reattore */
+    .reactor-system {
+      position: relative;
+      z-index: 4;
+      width: min(430px, 78vw);
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      transition: transform 200ms ease, filter 200ms ease;
+    }
+    .reactor-system.listening {
+      filter: drop-shadow(0 0 17px rgba(75, 211, 255, 0.5));
+    }
+    .reactor-system.capturing {
+      transform: scale(1.035);
+      filter: drop-shadow(0 0 31px rgba(124, 231, 255, 0.78));
+    }
+    .reactor-system.thinking {
+      filter: drop-shadow(0 0 29px rgba(255, 209, 102, 0.5));
+    }
+    .reactor-system.speaking {
+      filter: drop-shadow(0 0 35px rgba(103, 255, 178, 0.5));
+    }
     
-    .reactor-ring { position: absolute; border-radius: 50%; pointer-events: none; }
+    .reactor-ring {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
     .ring-a { inset: 0; border: 1px solid rgba(91, 214, 255, 0.44); animation: rotateClockwise 23s linear infinite; }
     .ring-b { inset: 7%; border: 3px double rgba(91, 214, 255, 0.56); animation: rotateCounter 14s linear infinite; }
     .ring-c { inset: 13%; border: 1px dashed rgba(132, 230, 255, 0.76); animation: rotateClockwise 10s linear infinite; }
     .ring-d { inset: 20%; border: 9px solid rgba(21, 101, 141, 0.34); animation: rotateCounter 7s linear infinite; }
     
-    .reactor-core { position: relative; z-index: 8; width: 39%; aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; border: 2px solid var(--cyan-bright); border-radius: 50%; background: radial-gradient(circle at 48% 43%, #eaffff 0 4%, #8feaff 5% 19%, #19a8ed 37%, #06476b 64%, #01111f 78%); box-shadow: 0 0 12px rgba(177, 242, 255, 0.95), inset 0 0 34px rgba(220, 251, 255, 0.55); animation: coreBreathing 2.1s ease-in-out infinite; transition: transform 110ms linear; }
-    @keyframes coreBreathing { 50% { box-shadow: 0 0 16px rgba(210, 251, 255, 1), 0 0 48px rgba(55, 205, 255, 0.95), inset 0 0 40px rgba(220, 251, 255, 0.7); } }
-    
-    .reactor-label { position: absolute; z-index: 10; color: white; font-family: "Orbitron", sans-serif; font-size: 8px; letter-spacing: 0.13em; text-shadow: 0 0 6px white, 0 0 12px var(--cyan); }
-    .center-status { position: relative; z-index: 10; min-height: 58px; margin-top: -16px; text-align: center; }
-    .primary-status { color: var(--cyan-bright); font-family: "Orbitron", sans-serif; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; text-shadow: var(--glow); }
-    .interim-transcript { min-height: 31px; max-width: 620px; margin-top: 7px; padding: 0 14px; color: var(--white); font-family: "Rajdhani", sans-serif; font-size: 18px; font-weight: 600; }
+    .reactor-core {
+      position: relative;
+      z-index: 8;
+      width: 39%;
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 2px solid var(--cyan-bright);
+      border-radius: 50%;
+      background: radial-gradient(circle at 48% 43%, #eaffff 0 4%, #8feaff 5% 19%, #19a8ed 37%, #06476b 64%, #01111f 78%);
+      box-shadow: 0 0 12px rgba(177, 242, 255, 0.95), inset 0 0 34px rgba(220, 251, 255, 0.55);
+      animation: coreBreathing 2.1s ease-in-out infinite;
+      transition: transform 110ms linear;
+    }
+    @keyframes coreBreathing {
+      50% { box-shadow: 0 0 16px rgba(210, 251, 255, 1), 0 0 48px rgba(55, 205, 255, 0.95), inset 0 0 40px rgba(220, 251, 255, 0.7); }
+    }
+    .reactor-label {
+      position: absolute;
+      z-index: 10;
+      color: white;
+      font-family: "Orbitron", sans-serif;
+      font-size: 8px;
+      letter-spacing: 0.13em;
+      text-shadow: 0 0 6px white, 0 0 12px var(--cyan);
+    }
+    .center-status {
+      position: relative;
+      z-index: 10;
+      min-height: 58px;
+      margin-top: -16px;
+      text-align: center;
+    }
+    .primary-status {
+      color: var(--cyan-bright);
+      font-family: "Orbitron", sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-shadow: var(--glow);
+    }
+    .interim-transcript {
+      min-height: 31px;
+      max-width: 620px;
+      margin-top: 7px;
+      padding: 0 14px;
+      color: var(--white);
+      font-family: "Rajdhani", sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+    }
 
-    /* PANNELLO INFERIORE */
-    .command-deck { display: grid; grid-template-columns: minmax(190px, 0.7fr) minmax(340px, 1.8fr) minmax(190px, 0.7fr); gap: 10px; }
-    .voice-controls, .system-diagnostics { min-height: 165px; padding: 12px; border: 1px solid var(--line); background: linear-gradient(145deg, rgba(6, 38, 62, 0.82), rgba(2, 16, 28, 0.8)); }
-    .deck-title { margin-bottom: 10px; color: var(--cyan-bright); font-family: "Orbitron", sans-serif; font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; }
-    
+    /* ===== CHART ===== */
+    .chart { width: 100%; height: 100%; min-height: 55px; display: block; }
+
+    /* ===== COMANDI INFERIORI ===== */
+    .command-deck {
+      display: grid;
+      grid-template-columns: minmax(190px, 0.7fr) minmax(340px, 1.8fr) minmax(190px, 0.7fr);
+      gap: 10px;
+    }
+    .voice-controls,
+    .system-diagnostics {
+      min-height: 165px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      background: linear-gradient(145deg, rgba(6, 38, 62, 0.82), rgba(2, 16, 28, 0.8));
+    }
+    .deck-title {
+      margin-bottom: 10px;
+      color: var(--cyan-bright);
+      font-family: "Orbitron", sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
     .main-controls { display: grid; gap: 8px; }
-    .hud-button { min-height: 39px; padding: 8px 12px; cursor: pointer; border: 1px solid var(--cyan); color: var(--cyan-bright); background: linear-gradient(90deg, rgba(27, 134, 184, 0.18), rgba(15, 74, 105, 0.06)); font-family: "Orbitron", sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; transition: background 160ms ease, box-shadow 160ms ease; }
-    .hud-button:hover { background: rgba(48, 187, 240, 0.22); box-shadow: var(--glow); }
-    .hud-button.primary { color: #00131e; background: var(--cyan-bright); box-shadow: var(--glow); }
-    .hud-button.danger { color: #ffdce2; border-color: var(--red); background: rgba(255, 102, 122, 0.1); }
-    .voice-help { margin-top: 10px; color: var(--muted); font-size: 9px; line-height: 1.5; }
+
+    /* ===== BUTTONS ===== */
+    .hud-button {
+      min-height: 39px;
+      padding: 8px 12px;
+      cursor: pointer;
+      border: 1px solid var(--cyan);
+      color: var(--cyan-bright);
+      background: linear-gradient(90deg, rgba(27, 134, 184, 0.18), rgba(15, 74, 105, 0.06));
+      font-family: "Orbitron", sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      transition: background 160ms ease, box-shadow 160ms ease;
+    }
+    .hud-button:hover {
+      background: rgba(48, 187, 240, 0.22);
+      box-shadow: var(--glow);
+    }
+    .hud-button.primary {
+      color: #00131e;
+      background: var(--cyan-bright);
+      box-shadow: var(--glow);
+    }
+    .hud-button.danger {
+      color: #ffdce2;
+      border-color: var(--red);
+      background: rgba(255, 102, 122, 0.1);
+    }
+    .voice-help {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.5;
+    }
     
-    .communication-panel { min-height: 165px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(180deg, rgba(5, 35, 59, 0.91), rgba(2, 14, 26, 0.91)); box-shadow: inset 0 0 24px rgba(46, 183, 239, 0.08); }
-    .readout { min-height: 102px; max-height: 260px; overflow-y: auto; padding: 12px 15px; }
-    .readout-placeholder { padding-top: 18px; color: var(--muted); font-family: "Rajdhani", sans-serif; font-size: 16px; text-align: center; }
-    .user-message { margin-bottom: 7px; color: var(--muted); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; }
+    /* ===== COMMUNICATION PANEL ===== */
+    .communication-panel {
+      min-height: 165px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(5, 35, 59, 0.91), rgba(2, 14, 26, 0.91));
+      box-shadow: inset 0 0 24px rgba(46, 183, 239, 0.08);
+    }
+    .readout {
+      min-height: 102px;
+      max-height: 260px;
+      overflow-y: auto;
+      padding: 12px 15px;
+    }
+    .readout::-webkit-scrollbar { width: 5px; }
+    .readout::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+    .readout::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 10px; }
+    .readout-placeholder {
+      padding-top: 18px;
+      color: var(--muted);
+      font-family: "Rajdhani", sans-serif;
+      font-size: 16px;
+      text-align: center;
+    }
+    .user-message {
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
     .user-message::before { content: "UTENTE // "; color: var(--cyan); }
-    .jarvis-message { color: var(--white); font-family: "Rajdhani", sans-serif; font-size: 17px; font-weight: 500; line-height: 1.42; }
-    .action-button { display: inline-flex; align-items: center; margin: 11px 7px 0 0; padding: 8px 13px; border: 1px solid var(--cyan); color: var(--cyan-bright); background: rgba(39, 191, 255, 0.12); font-family: "Share Tech Mono", monospace; font-size: 10px; text-decoration: none; }
-    .action-button:hover { background: rgba(39, 191, 255, 0.24); box-shadow: var(--glow); }
+    .jarvis-message {
+      color: var(--white);
+      font-family: "Rajdhani", sans-serif;
+      font-size: 17px;
+      font-weight: 500;
+      line-height: 1.42;
+    }
+    .jarvis-message .market-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid var(--line-soft);
+      background: rgba(39, 191, 255, 0.06);
+    }
+    .jarvis-message .market-item { text-align: center; }
+    .jarvis-message .market-item span { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .jarvis-message .market-item strong { color: var(--cyan-bright); font-size: 15px; display: block; margin-top: 3px; }
+    
+    .action-button {
+      display: inline-flex;
+      align-items: center;
+      margin: 11px 7px 0 0;
+      padding: 8px 13px;
+      border: 1px solid var(--cyan);
+      color: var(--cyan-bright);
+      background: rgba(39, 191, 255, 0.12);
+      font-family: "Share Tech Mono", monospace;
+      font-size: 10px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .action-button:hover {
+      background: rgba(39, 191, 255, 0.24);
+      box-shadow: var(--glow);
+    }
     .action-button::before { content: "↗"; margin-right: 7px; }
     
-    .command-form { display: grid; grid-template-columns: 1fr auto; gap: 7px; padding: 8px; border-top: 1px solid var(--line-soft); }
-    .command-form input { width: 100%; height: 37px; padding: 0 12px; border: 1px solid var(--line); color: var(--white); background: rgba(0, 7, 14, 0.7); font-family: "Rajdhani", sans-serif; font-size: 15px; font-weight: 600; }
+    .command-form {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 7px;
+      padding: 8px;
+      border-top: 1px solid var(--line-soft);
+    }
+    .command-form input {
+      width: 100%;
+      height: 37px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      color: var(--white);
+      background: rgba(0, 7, 14, 0.7);
+      font-family: "Rajdhani", sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .command-form input::placeholder { color: var(--muted); opacity: 0.7; }
     
-    .audio-wave { width: 100%; height: 35px; display: block; margin-top: 10px; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
+    .audio-wave {
+      width: 100%;
+      height: 35px;
+      display: block;
+      margin-top: 10px;
+      border-top: 1px solid var(--line-soft);
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .diagnostic-row {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 9px;
+      padding: 2px 0;
+    }
+    .diagnostic-row strong { color: var(--white); font-weight: 400; }
 
-    /* BANNER */
-    .system-banner { position: fixed; z-index: 300; top: 83px; left: 50%; width: min(730px, calc(100% - 24px)); transform: translateX(-50%); display: none; padding: 11px 14px; border: 1px solid var(--yellow); color: #fff0bd; background: rgba(38, 29, 7, 0.96); font-size: 11px; }
+    /* ===== BANNER ===== */
+    .system-banner {
+      position: fixed;
+      z-index: 300;
+      top: 83px;
+      left: 50%;
+      width: min(730px, calc(100% - 24px));
+      transform: translateX(-50%);
+      display: none;
+      padding: 11px 14px;
+      border: 1px solid var(--yellow);
+      color: #fff0bd;
+      background: rgba(38, 29, 7, 0.96);
+      font-size: 11px;
+      font-family: "Rajdhani", sans-serif;
+    }
     .system-banner.visible { display: block; }
-    .system-banner.is-error { border-color: var(--red); color: #ffd8df; background: rgba(44, 8, 16, 0.96); }
+    .system-banner.is-error {
+      border-color: var(--red);
+      color: #ffd8df;
+      background: rgba(44, 8, 16, 0.96);
+    }
 
-    /* RESPONSIVE */
-    @media (max-width: 1080px) { .system-tabs { display: none; } .top-navigation { grid-template-columns: 1fr auto; } .cockpit { grid-template-columns: 185px minmax(390px, 1fr) 185px; } .command-deck { grid-template-columns: 180px 1fr 180px; } }
-    @media (max-width: 850px) { .jarvis-app { display: block; } .cockpit { display: flex; flex-direction: column; } .center-stage { order: -1; min-height: 470px; } .side-column { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 145px); margin-top: 9px; } .command-deck { display: flex; flex-direction: column; margin-top: 9px; } .communication-panel { order: -1; } }
-    @media (max-width: 600px) { .identity-panel { display: none; } .center-stage { min-height: 405px; } .reactor-system { width: min(355px, 92vw); } .side-column { grid-template-columns: 1fr; grid-template-rows: repeat(4, 132px); } .command-form { grid-template-columns: 1fr; } }
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 1080px) {
+      .system-tabs { display: none; }
+      .top-navigation { grid-template-columns: 1fr auto; }
+      .cockpit { grid-template-columns: 185px minmax(390px, 1fr) 185px; }
+      .command-deck { grid-template-columns: 180px 1fr 180px; }
+    }
+    @media (max-width: 850px) {
+      .jarvis-app { display: block; }
+      .cockpit { display: flex; flex-direction: column; }
+      .center-stage { order: -1; min-height: 470px; }
+      .side-column { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 145px); margin-top: 9px; }
+      .command-deck { display: flex; flex-direction: column; margin-top: 9px; }
+      .communication-panel { order: -1; }
+    }
+    @media (max-width: 600px) {
+      .identity-panel { display: none; }
+      .center-stage { min-height: 405px; }
+      .reactor-system { width: min(355px, 92vw); }
+      .side-column { grid-template-columns: 1fr; grid-template-rows: repeat(4, 132px); }
+      .command-form { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 
@@ -170,7 +710,12 @@
           <p>Just A Rather Very Intelligent System</p>
         </div>
       </div>
-      <nav class="system-tabs"><span class="active">Sintesi</span><span>CPU</span><span>Rete</span><span>Comandi</span></nav>
+      <nav class="system-tabs">
+        <span class="active">Sintesi</span>
+        <span>CPU</span>
+        <span>Rete</span>
+        <span>Comandi</span>
+      </nav>
       <div class="identity-panel">
         <div class="identity-avatar"></div>
         <div>
@@ -214,19 +759,28 @@
       <section class="center-stage">
         <div class="crosshair"></div>
         <div id="reactorSystem" class="reactor-system">
-          <div class="reactor-ring ring-a"></div><div class="reactor-ring ring-b"></div><div class="reactor-ring ring-c"></div><div class="reactor-ring ring-d"></div><div class="reactor-ring ring-e"></div>
-          <div id="reactorCore" class="reactor-core"><span class="reactor-label">JARVIS</span></div>
+          <div class="reactor-ring ring-a"></div>
+          <div class="reactor-ring ring-b"></div>
+          <div class="reactor-ring ring-c"></div>
+          <div class="reactor-ring ring-d"></div>
+          <div id="reactorCore" class="reactor-core">
+            <span class="reactor-label">JARVIS</span>
+          </div>
         </div>
         <div class="center-status">
           <div id="primaryStatus" class="primary-status">SISTEMA IN ATTESA</div>
-          <div id="interimTranscript" class="interim-transcript">Premi “Attiva voce”, poi pronuncia “Ehi Jarvis”.</div>
+          <div id="interimTranscript" class="interim-transcript">Premi "Attiva voce", poi pronuncia "Ehi Jarvis".</div>
         </div>
       </section>
 
       <aside class="side-column">
         <section class="hud-panel">
           <div class="panel-header"><span>Scansione locale</span><span class="panel-indicator"></span></div>
-          <div class="panel-content"><div class="mini-radar"><span class="radar-dot one"></span><span class="radar-dot two"></span></div></div>
+          <div class="panel-content">
+            <div style="height:100%;display:grid;place-items:center;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:0.08em;">
+              <span style="animation:indicatorPulse 1.4s ease-in-out infinite;">● SISTEMA OPERATIVO</span>
+            </div>
+          </div>
         </section>
         <section class="hud-panel">
           <div class="panel-header"><span>Condizioni ambiente</span><span class="panel-indicator"></span></div>
@@ -260,7 +814,7 @@
           <button id="voiceToggleButton" class="hud-button primary" type="button">Attiva voce</button>
           <button id="muteButton" class="hud-button" type="button">Silenzia risposta</button>
         </div>
-        <div class="voice-help">Pronuncia: “Ehi Jarvis, analizza Apple”</div>
+        <div class="voice-help">Pronuncia: "Ehi Jarvis, analizza Apple"</div>
       </section>
 
       <section class="communication-panel">
@@ -290,8 +844,11 @@
   <script>
     "use strict";
 
-    /* CONFIGURAZIONE */
+    /* ===== CONFIGURAZIONE ===== */
+    // *** MODIFICA QUESTA COSTANTE PER USARE IL TUO WORKER ***
     const WORKER_URL = "https://jarvis-proxy.francesco-32105.workers.dev";
+    // ========================================================
+
     const WAKE_PATTERNS = ["ehi jarvis", "hey jarvis", "ok jarvis", "ciao jarvis", "jarvis"];
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
     const isSecurePage = window.isSecureContext || location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
@@ -301,16 +858,42 @@
     let currentSpeechAudio = null, currentSpeechUrl = null, requestCount = 0, currentAudioLevel = 0, targetAudioLevel = 0;
 
     const elements = {
-      systemBanner: document.getElementById("systemBanner"), systemClock: document.getElementById("systemClock"), sideClock: document.getElementById("sideClock"),
-      reactorSystem: document.getElementById("reactorSystem"), reactorCore: document.getElementById("reactorCore"), primaryStatus: document.getElementById("primaryStatus"), interimTranscript: document.getElementById("interimTranscript"),
-      voiceToggleButton: document.getElementById("voiceToggleButton"), muteButton: document.getElementById("muteButton"), manualForm: document.getElementById("manualForm"), manualInput: document.getElementById("manualInput"),
-      readout: document.getElementById("readout"), readoutPlaceholder: document.getElementById("readoutPlaceholder"), readoutUser: document.getElementById("readoutUser"), readoutJarvis: document.getElementById("readoutJarvis"),
-      voiceEngineState: document.getElementById("voiceEngineState"), voiceMeter: document.getElementById("voiceMeter"), confidenceValue: document.getElementById("confidenceValue"), deepseekState: document.getElementById("deepseekState"), requestCounter: document.getElementById("requestCounter"), latencyValue: document.getElementById("latencyValue"),
-      connectionState: document.getElementById("connectionState"), secureState: document.getElementById("secureState"), browserState: document.getElementById("browserState"), lastActionValue: document.getElementById("lastActionValue"),
-      diagnosticHttps: document.getElementById("diagnosticHttps"), diagnosticSpeechApi: document.getElementById("diagnosticSpeechApi"), diagnosticMicrophone: document.getElementById("diagnosticMicrophone"), diagnosticStatus: document.getElementById("diagnosticStatus"),
-      audioWave: document.getElementById("audioWave"), microBars: Array.from(document.querySelectorAll("#microBars span")), leftChart: document.getElementById("leftChart"), rightChart: document.getElementById("rightChart")
+      systemBanner: document.getElementById("systemBanner"),
+      systemClock: document.getElementById("systemClock"),
+      sideClock: document.getElementById("sideClock"),
+      reactorSystem: document.getElementById("reactorSystem"),
+      reactorCore: document.getElementById("reactorCore"),
+      primaryStatus: document.getElementById("primaryStatus"),
+      interimTranscript: document.getElementById("interimTranscript"),
+      voiceToggleButton: document.getElementById("voiceToggleButton"),
+      muteButton: document.getElementById("muteButton"),
+      manualForm: document.getElementById("manualForm"),
+      manualInput: document.getElementById("manualInput"),
+      readout: document.getElementById("readout"),
+      readoutPlaceholder: document.getElementById("readoutPlaceholder"),
+      readoutUser: document.getElementById("readoutUser"),
+      readoutJarvis: document.getElementById("readoutJarvis"),
+      voiceEngineState: document.getElementById("voiceEngineState"),
+      voiceMeter: document.getElementById("voiceMeter"),
+      confidenceValue: document.getElementById("confidenceValue"),
+      deepseekState: document.getElementById("deepseekState"),
+      requestCounter: document.getElementById("requestCounter"),
+      latencyValue: document.getElementById("latencyValue"),
+      connectionState: document.getElementById("connectionState"),
+      secureState: document.getElementById("secureState"),
+      browserState: document.getElementById("browserState"),
+      lastActionValue: document.getElementById("lastActionValue"),
+      diagnosticHttps: document.getElementById("diagnosticHttps"),
+      diagnosticSpeechApi: document.getElementById("diagnosticSpeechApi"),
+      diagnosticMicrophone: document.getElementById("diagnosticMicrophone"),
+      diagnosticStatus: document.getElementById("diagnosticStatus"),
+      audioWave: document.getElementById("audioWave"),
+      microBars: Array.from(document.querySelectorAll("#microBars span")),
+      leftChart: document.getElementById("leftChart"),
+      rightChart: document.getElementById("rightChart")
     };
 
+    /* ===== UTILITY ===== */
     function stripAccents(value) { return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
     function normalizeSpeech(value) { return stripAccents(value).toLowerCase().replace(/\s+/g, " ").trim(); }
     function joinUnique(base, addition) {
@@ -322,10 +905,16 @@
       return `${first} ${second}`.trim();
     }
     
-    function setDiagnosticValue(element, text, statusClass = "") { element.textContent = text; element.className = statusClass; }
+    function setDiagnosticValue(element, text, statusClass = "") {
+      element.textContent = text;
+      element.className = statusClass;
+    }
+
     function showBanner(message, isError = false) {
-      elements.systemBanner.textContent = message; elements.systemBanner.className = "system-banner visible" + (isError ? " is-error" : "");
-      window.clearTimeout(showBanner.timer); showBanner.timer = window.setTimeout(() => elements.systemBanner.classList.remove("visible"), 6000);
+      elements.systemBanner.textContent = message;
+      elements.systemBanner.className = "system-banner visible" + (isError ? " is-error" : "");
+      window.clearTimeout(showBanner.timer);
+      showBanner.timer = window.setTimeout(() => elements.systemBanner.classList.remove("visible"), 6000);
     }
 
     function updateClock() {
@@ -347,86 +936,140 @@
       elements.browserState.textContent = ua.includes("edg/") ? "EDGE" : ua.includes("chrome") ? "CHROME" : ua.includes("safari") ? "SAFARI" : "ALTRO";
     }
 
+    /* ===== SET MODE ===== */
     function setMode(newMode) {
       mode = newMode;
-      elements.reactorSystem.classList.remove("listening", "capturing", "thinking");
+      elements.reactorSystem.classList.remove("listening", "capturing", "thinking", "speaking");
       switch (newMode) {
         case "off":
-          elements.primaryStatus.textContent = "SISTEMA IN ATTESA"; elements.voiceEngineState.textContent = "OFFLINE"; elements.voiceMeter.style.width = "5%";
+          elements.primaryStatus.textContent = "SISTEMA IN ATTESA";
+          elements.voiceEngineState.textContent = "OFFLINE";
+          elements.voiceMeter.style.width = "5%";
           setDiagnosticValue(elements.diagnosticStatus, "ATTESA", "warning");
-          elements.voiceToggleButton.textContent = "Attiva voce"; elements.voiceToggleButton.className = "hud-button primary";
+          elements.voiceToggleButton.textContent = "Attiva voce";
+          elements.voiceToggleButton.className = "hud-button primary";
           break;
         case "awake":
-          elements.primaryStatus.textContent = "IN ASCOLTO · PRONUNCIA EHI JARVIS"; elements.voiceEngineState.textContent = "ONLINE"; elements.voiceMeter.style.width = "42%";
+          elements.primaryStatus.textContent = "IN ASCOLTO · PRONUNCIA EHI JARVIS";
+          elements.voiceEngineState.textContent = "ONLINE";
+          elements.voiceMeter.style.width = "42%";
           setDiagnosticValue(elements.diagnosticStatus, "ASCOLTO WAKE WORD", "good");
-          elements.voiceToggleButton.textContent = "Disattiva voce"; elements.voiceToggleButton.className = "hud-button danger";
+          elements.voiceToggleButton.textContent = "Disattiva voce";
+          elements.voiceToggleButton.className = "hud-button danger";
           elements.reactorSystem.classList.add("listening");
           break;
         case "capturing":
-          elements.primaryStatus.textContent = "COMANDO ACQUISITO"; elements.voiceEngineState.textContent = "ACQUISIZIONE"; elements.voiceMeter.style.width = "88%";
-          setDiagnosticValue(elements.diagnosticStatus, "REGISTRAZIONE", "good"); elements.reactorSystem.classList.add("capturing");
+          elements.primaryStatus.textContent = "COMANDO ACQUISITO";
+          elements.voiceEngineState.textContent = "ACQUISIZIONE";
+          elements.voiceMeter.style.width = "88%";
+          setDiagnosticValue(elements.diagnosticStatus, "REGISTRAZIONE", "good");
+          elements.reactorSystem.classList.add("capturing");
           break;
         case "thinking":
-          elements.primaryStatus.textContent = "ELABORAZIONE NEURALE"; elements.deepseekState.textContent = "ELABORAZIONE"; elements.voiceMeter.style.width = "66%";
-          setDiagnosticValue(elements.diagnosticStatus, "CONTATTO DEEPSEEK", "warning"); elements.reactorSystem.classList.add("thinking");
+          elements.primaryStatus.textContent = "ELABORAZIONE NEURALE";
+          elements.deepseekState.textContent = "ELABORAZIONE";
+          elements.voiceMeter.style.width = "66%";
+          setDiagnosticValue(elements.diagnosticStatus, "CONTATTO DEEPSEEK", "warning");
+          elements.reactorSystem.classList.add("thinking");
           break;
         case "speaking":
-          elements.primaryStatus.textContent = "SINTESI VOCALE ATTIVA"; elements.voiceEngineState.textContent = "SINTESI"; elements.voiceMeter.style.width = "78%";
-          setDiagnosticValue(elements.diagnosticStatus, "RISPOSTA VOCALE", "good"); elements.reactorSystem.classList.add("capturing");
+          elements.primaryStatus.textContent = "SINTESI VOCALE ATTIVA";
+          elements.voiceEngineState.textContent = "SINTESI";
+          elements.voiceMeter.style.width = "78%";
+          setDiagnosticValue(elements.diagnosticStatus, "RISPOSTA VOCALE", "good");
+          elements.reactorSystem.classList.add("speaking");
           break;
         case "error":
-          elements.primaryStatus.textContent = "ERRORE DI SISTEMA"; elements.voiceEngineState.textContent = "ERRORE"; elements.voiceMeter.style.width = "8%";
+          elements.primaryStatus.textContent = "ERRORE DI SISTEMA";
+          elements.voiceEngineState.textContent = "ERRORE";
+          elements.voiceMeter.style.width = "8%";
           setDiagnosticValue(elements.diagnosticStatus, "ERRORE", "error");
           break;
       }
     }
 
+    /* ===== CHART ===== */
     function createAnimatedChart(canvas, color) {
-      const ctx = canvas.getContext("2d"); const values = new Array(65).fill(0.3);
+      const ctx = canvas.getContext("2d");
+      const values = new Array(65).fill(0.3);
       function draw() {
         const ratio = window.devicePixelRatio || 1;
         if (canvas.width !== Math.floor(canvas.clientWidth * ratio)) {
-          canvas.width = Math.max(1, Math.floor(canvas.clientWidth * ratio)); canvas.height = Math.max(1, Math.floor(canvas.clientHeight * ratio));
+          canvas.width = Math.max(1, Math.floor(canvas.clientWidth * ratio));
+          canvas.height = Math.max(1, Math.floor(canvas.clientHeight * ratio));
         }
         values.shift();
         const boost = mode === "thinking" ? 0.43 : mode === "capturing" ? 0.3 : mode === "speaking" ? 0.25 : 0.08;
         values.push(Math.min(1, 0.12 + boost + Math.random() * 0.34));
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = "rgba(74, 198, 246, 0.12)"; ctx.lineWidth = 1;
-        for (let r = 1; r < 4; r++) { ctx.beginPath(); ctx.moveTo(0, (canvas.height / 4) * r); ctx.lineTo(canvas.width, (canvas.height / 4) * r); ctx.stroke(); }
-        ctx.strokeStyle = color; ctx.lineWidth = 1.25 * ratio; ctx.shadowColor = color; ctx.shadowBlur = 5; ctx.beginPath();
-        values.forEach((val, i) => { const x = (i / 64) * canvas.width, y = canvas.height - val * canvas.height * 0.87; i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
-        ctx.stroke(); ctx.shadowBlur = 0;
+        ctx.strokeStyle = "rgba(74, 198, 246, 0.12)";
+        ctx.lineWidth = 1;
+        for (let r = 1; r < 4; r++) {
+          ctx.beginPath();
+          ctx.moveTo(0, (canvas.height / 4) * r);
+          ctx.lineTo(canvas.width, (canvas.height / 4) * r);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.25 * ratio;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 5;
+        ctx.beginPath();
+        values.forEach((val, i) => {
+          const x = (i / 64) * canvas.width;
+          const y = canvas.height - val * canvas.height * 0.87;
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.shadowBlur = 0;
       }
       window.setInterval(draw, 150);
     }
 
+    /* ===== AUDIO HUD ===== */
     function bumpAudioLevel(value) { targetAudioLevel = Math.max(targetAudioLevel, Math.min(1, value)); }
 
     function drawAudioHud() {
       const cvs = elements.audioWave, ctx = cvs.getContext("2d"), ratio = window.devicePixelRatio || 1;
-      if (cvs.width !== Math.floor(cvs.clientWidth * ratio)) { cvs.width = Math.max(1, Math.floor(cvs.clientWidth * ratio)); cvs.height = Math.max(1, Math.floor(cvs.clientHeight * ratio)); }
-      currentAudioLevel += (targetAudioLevel - currentAudioLevel) * 0.19; targetAudioLevel *= 0.91;
+      if (cvs.width !== Math.floor(cvs.clientWidth * ratio)) {
+        cvs.width = Math.max(1, Math.floor(cvs.clientWidth * ratio));
+        cvs.height = Math.max(1, Math.floor(cvs.clientHeight * ratio));
+      }
+      currentAudioLevel += (targetAudioLevel - currentAudioLevel) * 0.19;
+      targetAudioLevel *= 0.91;
       if (mode === "awake" && targetAudioLevel < 0.08) targetAudioLevel = 0.04 + Math.abs(Math.sin(Date.now() / 600)) * 0.035;
       if (mode === "speaking") targetAudioLevel = 0.34 + Math.random() * 0.42;
       ctx.clearRect(0, 0, cvs.width, cvs.height);
-      ctx.strokeStyle = mode === "capturing" ? "#a8efff" : "#27bfff"; ctx.lineWidth = 2 * ratio; ctx.shadowColor = "#27bfff"; ctx.shadowBlur = 6; ctx.beginPath();
+      ctx.strokeStyle = mode === "capturing" ? "#a8efff" : "#27bfff";
+      ctx.lineWidth = 2 * ratio;
+      ctx.shadowColor = "#27bfff";
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
       for (let i = 0; i <= 70; i++) {
-        const x = (i / 70) * cvs.width, env = 0.25 + 0.75 * Math.abs(Math.sin(i * 0.25)), amp = currentAudioLevel * cvs.height * 0.42 * env;
+        const x = (i / 70) * cvs.width;
+        const env = 0.25 + 0.75 * Math.abs(Math.sin(i * 0.25));
+        const amp = currentAudioLevel * cvs.height * 0.42 * env;
         const y = cvs.height / 2 + Math.sin(Date.now() / 115 + i * 0.73) * amp;
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
-      ctx.stroke(); ctx.shadowBlur = 0;
-      elements.microBars.forEach((bar, i) => { bar.style.height = `${Math.min(100, 8 + currentAudioLevel * (Math.abs(Math.sin(Date.now() / 135 + i * 0.72)) + Math.random() * 0.18) * 88)}%`; });
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      elements.microBars.forEach((bar, i) => {
+        bar.style.height = `${Math.min(100, 8 + currentAudioLevel * (Math.abs(Math.sin(Date.now() / 135 + i * 0.72)) + Math.random() * 0.18) * 88)}%`;
+      });
       elements.reactorCore.style.transform = `scale(${1 + currentAudioLevel * 0.12})`;
       requestAnimationFrame(drawAudioHud);
     }
 
+    /* ===== RICONOSCIMENTO VOCALE ===== */
     function findWakeWord(raw) {
       const norm = normalizeSpeech(raw);
       for (const pattern of WAKE_PATTERNS) {
-        const nPattern = normalizeSpeech(pattern), idx = norm.indexOf(nPattern);
-        if (idx !== -1) return { found: true, remainder: raw.slice(idx + nPattern.length).replace(/^[\s,.;:!?-]+/, "").trim() };
+        const nPattern = normalizeSpeech(pattern);
+        const idx = norm.indexOf(nPattern);
+        if (idx !== -1) {
+          return { found: true, remainder: raw.slice(idx + nPattern.length).replace(/^[\s,.;:!?-]+/, "").trim() };
+        }
       }
       return { found: false, remainder: "" };
     }
@@ -436,135 +1079,255 @@
     function resetSilenceTimer() { if (silenceTimer) window.clearTimeout(silenceTimer); silenceTimer = window.setTimeout(finalizeVoiceCommand, 1450); }
 
     function finalizeVoiceCommand() {
-      const cmd = `${capturedFinal} ${capturedInterim}`.replace(/\s+/g, " ").trim(); clearCommandBuffer();
+      const cmd = `${capturedFinal} ${capturedInterim}`.replace(/\s+/g, " ").trim();
+      clearCommandBuffer();
       if (cmd.length < 2) { elements.interimTranscript.textContent = "Comando non rilevato. Pronuncia nuovamente “Ehi Jarvis”."; setMode("awake"); return; }
-      recognitionSuspended = true; if (recognitionRunning && recognition) { try { recognition.stop(); } catch {} }
-      elements.interimTranscript.textContent = `Comando: “${cmd}”`; askJarvis(cmd, null);
+      recognitionSuspended = true;
+      if (recognitionRunning && recognition) { try { recognition.stop(); } catch {} }
+      elements.interimTranscript.textContent = `Comando: “${cmd}”`;
+      askJarvis(cmd, null);
     }
 
     function buildRecognition() {
       if (!SpeechRecognitionClass) return null;
-      const eng = new SpeechRecognitionClass(); eng.lang = "it-IT"; eng.continuous = true; eng.interimResults = true; eng.maxAlternatives = 1;
-      eng.onstart = () => { recognitionRunning = true; setDiagnosticValue(elements.diagnosticMicrophone, "ATTIVO", "good"); if (voiceEnabled && !recognitionSuspended && mode !== "capturing" && mode !== "thinking" && mode !== "speaking") setMode("awake"); };
-      eng.onaudiostart = () => bumpAudioLevel(0.15); eng.onsoundstart = () => bumpAudioLevel(0.4); eng.onspeechstart = () => bumpAudioLevel(0.9);
+      const eng = new SpeechRecognitionClass();
+      eng.lang = "it-IT";
+      eng.continuous = true;
+      eng.interimResults = true;
+      eng.maxAlternatives = 1;
+      
+      eng.onstart = () => {
+        recognitionRunning = true;
+        setDiagnosticValue(elements.diagnosticMicrophone, "ATTIVO", "good");
+        if (voiceEnabled && !recognitionSuspended && mode !== "capturing" && mode !== "thinking" && mode !== "speaking") setMode("awake");
+      };
+      eng.onaudiostart = () => bumpAudioLevel(0.15);
+      eng.onsoundstart = () => bumpAudioLevel(0.4);
+      eng.onspeechstart = () => bumpAudioLevel(0.9);
+      
       eng.onresult = e => {
-        bumpAudioLevel(0.75); let ft = "", it = "", conf = 0;
+        bumpAudioLevel(0.75);
+        let ft = "", it = "", conf = 0;
         for (let i = e.resultIndex; i < e.results.length; i++) {
-          const r = e.results[i], t = r[0].transcript.trim(); conf = Math.max(conf, Number(r[0].confidence) || 0);
+          const r = e.results[i];
+          const t = r[0].transcript.trim();
+          conf = Math.max(conf, Number(r[0].confidence) || 0);
           r.isFinal ? ft = joinUnique(ft, t) : it = joinUnique(it, t);
         }
         if (conf > 0) elements.confidenceValue.textContent = `${Math.round(conf * 100)}%`;
+        
         if (mode === "awake") {
-          const w = findWakeWord(ft || it); if (!w.found) return;
-          clearCommandBuffer(); setMode("capturing");
+          const w = findWakeWord(ft || it);
+          if (!w.found) return;
+          clearCommandBuffer();
+          setMode("capturing");
           if (w.remainder) { ft ? capturedFinal = w.remainder : capturedInterim = w.remainder; resetSilenceTimer(); }
-          updateCapturedTranscript(); return;
+          updateCapturedTranscript();
+          return;
         }
         if (mode === "capturing") {
           if (ft) { const w = findWakeWord(ft); capturedFinal = joinUnique(capturedFinal, w.found ? w.remainder : ft); capturedInterim = ""; }
           if (it) { const w = findWakeWord(it); capturedInterim = w.found ? w.remainder : it; }
-          updateCapturedTranscript(); resetSilenceTimer();
+          updateCapturedTranscript();
+          resetSilenceTimer();
         }
       };
+      
       eng.onerror = e => {
         recognitionRunning = false;
         if (["not-allowed", "service-not-allowed", "audio-capture"].includes(e.error)) {
-          voiceEnabled = false; recognitionSuspended = false; setMode("error"); setDiagnosticValue(elements.diagnosticMicrophone, "BLOCCATO", "error");
+          voiceEnabled = false;
+          recognitionSuspended = false;
+          setMode("error");
+          setDiagnosticValue(elements.diagnosticMicrophone, "BLOCCATO", "error");
           showBanner("Errore microfono. Controlla i permessi del browser.", true);
         }
       };
-      eng.onend = () => { recognitionRunning = false; if (voiceEnabled && !recognitionSuspended && mode !== "off" && mode !== "error") scheduleRecognitionRestart(); };
+      
+      eng.onend = () => {
+        recognitionRunning = false;
+        if (voiceEnabled && !recognitionSuspended && mode !== "off" && mode !== "error") scheduleRecognitionRestart();
+      };
       return eng;
     }
 
-    function scheduleRecognitionRestart() { if (recognitionRestartTimer) window.clearTimeout(recognitionRestartTimer); recognitionRestartTimer = window.setTimeout(startRecognitionEngine, 350); }
+    function scheduleRecognitionRestart() {
+      if (recognitionRestartTimer) window.clearTimeout(recognitionRestartTimer);
+      recognitionRestartTimer = window.setTimeout(startRecognitionEngine, 350);
+    }
+
     function startRecognitionEngine() {
       if (!voiceEnabled || recognitionSuspended || recognitionRunning) return;
       if (!recognition) recognition = buildRecognition();
       if (recognition) { try { recognition.start(); } catch (e) { if(e.name !== "InvalidStateError") showBanner("Errore avvio microfono.", true); } }
     }
 
+    /* ===== ATTIVA / DISATTIVA VOCE ===== */
     async function activateVoice() {
       if (!isSecurePage || !SpeechRecognitionClass) return showBanner("Microfono non supportato in questo ambiente.", true);
       elements.primaryStatus.textContent = "RICHIESTA MICROFONO";
-      try { const s = await navigator.mediaDevices.getUserMedia({ audio: true }); s.getTracks().forEach(t => t.stop()); } 
-      catch { setMode("error"); return showBanner("Permesso microfono negato.", true); }
-      voiceEnabled = true; recognitionSuspended = false; clearCommandBuffer(); setMode("awake"); elements.interimTranscript.textContent = "Pronuncia “Ehi Jarvis” seguito dal comando."; startRecognitionEngine();
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+        s.getTracks().forEach(t => t.stop());
+      } catch {
+        setMode("error");
+        return showBanner("Permesso microfono negato.", true);
+      }
+      voiceEnabled = true;
+      recognitionSuspended = false;
+      clearCommandBuffer();
+      setMode("awake");
+      elements.interimTranscript.textContent = "Pronuncia “Ehi Jarvis” seguito dal comando.";
+      startRecognitionEngine();
     }
 
     function deactivateVoice() {
-      voiceEnabled = false; recognitionSuspended = false; clearCommandBuffer();
+      voiceEnabled = false;
+      recognitionSuspended = false;
+      clearCommandBuffer();
       if (recognitionRestartTimer) window.clearTimeout(recognitionRestartTimer);
       if (recognition) { try { recognition.onend = null; recognition.stop(); } catch {} recognition = null; }
-      recognitionRunning = false; setDiagnosticValue(elements.diagnosticMicrophone, "NON ATTIVO", "warning"); elements.interimTranscript.textContent = "Premi “Attiva voce” per iniziare."; setMode("off");
+      recognitionRunning = false;
+      setDiagnosticValue(elements.diagnosticMicrophone, "NON ATTIVO", "warning");
+      elements.interimTranscript.textContent = "Premi “Attiva voce” per iniziare.";
+      setMode("off");
     }
 
-    // GESTIONE AZIONI E RISPOSTE
+    /* ===== GESTIONE AZIONI ===== */
     function executeJarvisAction(action, preparedWindow) {
-      if (!action || !action.autoOpen) { if (preparedWindow && !preparedWindow.closed) try { preparedWindow.close(); } catch {} return true; }
-      elements.lastActionValue.textContent = String(action.label || action.type || "ESEGUITA").slice(0, 22).toUpperCase();
-      if (action.type === "app" || /^[a-z][a-z0-9+.-]*:/i.test(action.url) && !/^https?:\/\//i.test(action.url)) {
-        try { const a = document.createElement("a"); a.href = action.url; a.style.display="none"; document.body.appendChild(a); a.click(); a.remove(); return true; } catch { return false; }
+      if (!action || !action.autoOpen) {
+        if (preparedWindow && !preparedWindow.closed) try { preparedWindow.close(); } catch {}
+        return true;
       }
-      try { if(preparedWindow) { preparedWindow.location.href = action.url; return true; } window.open(action.url, "_blank", "noopener"); return true; } catch { return false; }
+      elements.lastActionValue.textContent = String(action.label || action.type || "ESEGUITA").slice(0, 22).toUpperCase();
+      
+      if (action.type === "app" || /^[a-z][a-z0-9+.-]*:/i.test(action.url) && !/^https?:\/\//i.test(action.url)) {
+        try {
+          const a = document.createElement("a");
+          a.href = action.url;
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          return true;
+        } catch { return false; }
+      }
+      
+      try {
+        if (preparedWindow) { preparedWindow.location.href = action.url; return true; }
+        window.open(action.url, "_blank", "noopener");
+        return true;
+      } catch { return false; }
     }
 
     function createActionButton(action) {
       if (!action?.url) return null;
-      const b = document.createElement("a"); b.className = "action-button"; b.textContent = action.label || "Apri destinazione"; b.href = action.url; b.target = "_blank"; b.rel = "noopener noreferrer"; return b;
+      const b = document.createElement("a");
+      b.className = "action-button";
+      b.textContent = action.label || "Apri destinazione";
+      b.href = action.url;
+      b.target = "_blank";
+      b.rel = "noopener noreferrer";
+      return b;
     }
 
     function showReadout(userText, jarvisText, action, market, preparedWindow) {
-      elements.readoutPlaceholder.hidden = true; elements.readoutUser.hidden = false; elements.readoutUser.textContent = userText;
-      elements.readoutJarvis.hidden = false; elements.readoutJarvis.innerHTML = "";
-      const div = document.createElement("div"); div.textContent = jarvisText; elements.readoutJarvis.appendChild(div);
+      elements.readoutPlaceholder.hidden = true;
+      elements.readoutUser.hidden = false;
+      elements.readoutUser.textContent = userText;
+      elements.readoutJarvis.hidden = false;
+      elements.readoutJarvis.innerHTML = "";
+      
+      const div = document.createElement("div");
+      div.textContent = jarvisText;
+      elements.readoutJarvis.appendChild(div);
       
       if (market) {
-        const grid = document.createElement("div"); grid.className = "market-grid";
-        [{l:"PREZZO", v:market.currentPrice}, {l:"VAR %", v:market.percentageChange}].forEach(c => {
-          const cell = document.createElement("div"); cell.className="market-item"; cell.innerHTML = `<span>${c.l}</span><strong>${c.v}</strong>`; grid.appendChild(cell);
+        const grid = document.createElement("div");
+        grid.className = "market-grid";
+        const items = [
+          { l: "PREZZO", v: market.currentPrice },
+          { l: "VAR %", v: market.percentageChange + "%" }
+        ];
+        if (market.dailyHigh) items.push({ l: "MAX GIORNO", v: market.dailyHigh });
+        if (market.dailyLow) items.push({ l: "MIN GIORNO", v: market.dailyLow });
+        if (market.marketCapitalization) {
+          const cap = (market.marketCapitalization / 1e9).toFixed(1) + "B";
+          items.push({ l: "CAP. MERCATO", v: cap });
+        }
+        items.forEach(c => {
+          const cell = document.createElement("div");
+          cell.className = "market-item";
+          cell.innerHTML = `<span>${c.l}</span><strong>${c.v}</strong>`;
+          grid.appendChild(cell);
         });
         elements.readoutJarvis.appendChild(grid);
       }
+      
       if (action?.url) elements.readoutJarvis.appendChild(createActionButton(action));
       executeJarvisAction(action, preparedWindow);
       elements.readout.scrollTop = elements.readout.scrollHeight;
     }
 
+    /* ===== CHIAMATA A JARVIS ===== */
     async function askJarvis(question, preparedWindow = null) {
-      const q = String(question || "").trim(); if (!q) return;
-      recognitionSuspended = true; if (recognitionRunning && recognition) { try { recognition.stop(); } catch {} }
-      setMode("thinking"); elements.interimTranscript.textContent = `Analisi: “${q}”`; elements.deepseekState.textContent = "ELABORAZIONE";
-      elements.requestCounter.textContent = String(++requestCount); const start = performance.now();
+      const q = String(question || "").trim();
+      if (!q) return;
+      
+      recognitionSuspended = true;
+      if (recognitionRunning && recognition) { try { recognition.stop(); } catch {} }
+      setMode("thinking");
+      elements.interimTranscript.textContent = `Analisi: “${q}”`;
+      elements.deepseekState.textContent = "ELABORAZIONE";
+      elements.requestCounter.textContent = String(++requestCount);
+      const start = performance.now();
 
       try {
-        const res = await fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: q }) });
-        const data = await res.json(); if (!res.ok) throw new Error(data.error || "Errore Server");
-        elements.latencyValue.textContent = `${Math.round(performance.now() - start)} MS`; elements.deepseekState.textContent = "OK";
+        const res = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: q })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Errore Server");
+        
+        elements.latencyValue.textContent = `${Math.round(performance.now() - start)} MS`;
+        elements.deepseekState.textContent = "OK";
         showReadout(q, data.text, data.action, data.market, preparedWindow);
-        elements.interimTranscript.textContent = "Risposta pronta."; await speak(data.text);
+        elements.interimTranscript.textContent = "Risposta pronta.";
+        await speak(data.text);
       } catch (err) {
         if (preparedWindow) try { preparedWindow.close(); } catch {}
-        elements.deepseekState.textContent = "ERRORE"; const msg = "Errore di connessione al server.";
-        showReadout(q, msg, null, null, null); showBanner(msg, true); await speakWithBrowser(msg);
+        elements.deepseekState.textContent = "ERRORE";
+        const msg = "Errore di connessione al server.";
+        showReadout(q, msg, null, null, null);
+        showBanner(msg, true);
+        await speakWithBrowser(msg);
       }
     }
 
-    // VOCE TTS
+    /* ===== SINTESI VOCALE ===== */
     function resumeRecognitionAfterSpeech() {
       recognitionSuspended = false;
-      if (voiceEnabled) { setMode("awake"); elements.interimTranscript.textContent = "Pronuncia “Ehi Jarvis” seguito dal comando."; window.setTimeout(startRecognitionEngine, 450); } 
-      else setMode("off");
+      if (voiceEnabled) {
+        setMode("awake");
+        elements.interimTranscript.textContent = "Pronuncia “Ehi Jarvis” seguito dal comando.";
+        window.setTimeout(startRecognitionEngine, 450);
+      } else setMode("off");
     }
 
     function speakWithBrowser(text) {
       return new Promise(res => {
         if (muted || !("speechSynthesis" in window)) { resumeRecognitionAfterSpeech(); return res(); }
-        window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = "it-IT"; u.rate = 1.05;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "it-IT";
+        u.rate = 1.05;
         if (!cachedVoice) cachedVoice = window.speechSynthesis.getVoices().find(v => v.lang.includes("it") && (v.name.includes("Elsa") || v.name.includes("Female")));
         if (cachedVoice) u.voice = cachedVoice;
         u.onend = u.onerror = () => { resumeRecognitionAfterSpeech(); res(); };
-        setMode("speaking"); window.speechSynthesis.speak(u);
+        setMode("speaking");
+        window.speechSynthesis.speak(u);
       });
     }
 
@@ -572,31 +1335,71 @@
       if (muted) return resumeRecognitionAfterSpeech();
       if (currentSpeechAudio) { try { currentSpeechAudio.pause(); } catch {} currentSpeechAudio = null; }
       setMode("speaking");
+      
       try {
-        const res = await fetch(WORKER_URL + "/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+        const res = await fetch(WORKER_URL + "/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
         if (!res.ok) throw new Error("TTS non disponibile");
-        const blob = await res.blob(); currentSpeechUrl = URL.createObjectURL(blob); currentSpeechAudio = new Audio(currentSpeechUrl);
+        const blob = await res.blob();
+        currentSpeechUrl = URL.createObjectURL(blob);
+        currentSpeechAudio = new Audio(currentSpeechUrl);
         currentSpeechAudio.onend = currentSpeechAudio.onerror = () => { resumeRecognitionAfterSpeech(); };
         await currentSpeechAudio.play();
         currentSpeechAudio.addEventListener("ended", resumeRecognitionAfterSpeech);
-      } catch { await speakWithBrowser(text); }
+      } catch {
+        await speakWithBrowser(text);
+      }
     }
 
-    // EVENT LISTENERS INIT
+    /* ===== EVENT LISTENERS ===== */
     elements.voiceToggleButton.addEventListener("click", () => voiceEnabled ? deactivateVoice() : activateVoice());
-    elements.muteButton.addEventListener("click", () => { muted = !muted; elements.muteButton.textContent = muted ? "Riattiva risposta" : "Silenzia risposta"; elements.muteButton.className = muted ? "hud-button danger" : "hud-button"; });
+    
+    elements.muteButton.addEventListener("click", () => {
+      muted = !muted;
+      elements.muteButton.textContent = muted ? "Riattiva risposta" : "Silenzia risposta";
+      elements.muteButton.className = muted ? "hud-button danger" : "hud-button";
+    });
+    
     elements.manualForm.addEventListener("submit", e => {
-      e.preventDefault(); const q = elements.manualInput.value.trim(); if (!q) return;
-      let w = null; if (["apri", "vai", "biglietti", "azioni"].some(k => q.toLowerCase().includes(k))) { try { w = window.open("", "jarvis_action"); if(w) w.document.body.innerHTML="<h3 style='color:white;font-family:monospace;text-align:center;margin-top:20%'>JARVIS elaborazione...</h3>"; } catch {} }
-      askJarvis(q, w); elements.manualInput.value = "";
+      e.preventDefault();
+      const q = elements.manualInput.value.trim();
+      if (!q) return;
+      let w = null;
+      if (["apri", "vai", "biglietti", "azioni"].some(k => q.toLowerCase().includes(k))) {
+        try {
+          w = window.open("", "jarvis_action");
+          if (w) w.document.body.innerHTML = "<h3 style='color:white;font-family:monospace;text-align:center;margin-top:20%'>JARVIS elaborazione...</h3>";
+        } catch {}
+      }
+      askJarvis(q, w);
+      elements.manualInput.value = "";
     });
 
-    // STARTUP
-    window.setInterval(updateClock, 1000); updateClock();
-    window.addEventListener("online", updateConnectionState); window.addEventListener("offline", updateConnectionState); updateConnectionState();
-    initializeDiagnostics(); setMode("off");
-    createAnimatedChart(elements.leftChart, "#4bc5ff"); createAnimatedChart(elements.rightChart, "#67ffb2");
+    /* ===== AVVIO ===== */
+    window.setInterval(updateClock, 1000);
+    updateClock();
+    window.addEventListener("online", updateConnectionState);
+    window.addEventListener("offline", updateConnectionState);
+    updateConnectionState();
+    initializeDiagnostics();
+    setMode("off");
+    createAnimatedChart(elements.leftChart, "#4bc5ff");
+    createAnimatedChart(elements.rightChart, "#67ffb2");
     requestAnimationFrame(drawAudioHud);
+
+    // Carica le voci TTS in anticipo
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+    }
+
+    console.log("J.A.R.V.I.S. inizializzato correttamente.");
+    console.log("Worker URL:", WORKER_URL);
+    console.log("Per funzionare completamente, devi avere un worker Cloudflare attivo.");
+    console.log("Modifica la costante WORKER_URL nel codice con il tuo URL.");
   </script>
 </body>
 </html>
