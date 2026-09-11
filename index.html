@@ -356,6 +356,9 @@
 
     // *** MODIFICA QUESTA RIGA CON IL TUO URL DEL WORKER ***
     const WORKER_URL = "https://jarvis-proxy.francesco-32105.workers.dev";
+    
+    // Assicura che l'URL base non abbia lo slash alla fine
+    const BASE_URL = WORKER_URL.replace(/\/+$/, "");
 
     const WAKE_PATTERNS = ["ehi jarvis", "hey jarvis", "ok jarvis", "ciao jarvis", "jarvis"];
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -744,7 +747,7 @@
       const start = performance.now();
 
       try {
-        const res = await fetch(WORKER_URL, {
+        const res = await fetch(BASE_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ question: q })
@@ -753,12 +756,11 @@
         const contentType = res.headers.get("content-type") || "";
         if (!contentType.includes("application/json")) {
           const txt = await res.text();
-          console.error("Risposta NON JSON:", res.status, txt.slice(0, 300));
           throw new Error(`Server ha risposto ${res.status}. Controlla WORKER_URL.`);
         }
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        if (!res.ok) throw new Error(data.error || data.text || `HTTP ${res.status}`);
 
         elements.latencyValue.textContent = `${Math.round(performance.now() - start)} MS`;
         elements.deepseekState.textContent = "OK";
@@ -791,8 +793,10 @@
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "it-IT"; u.rate = 1.05;
-        if (!cachedVoice) cachedVoice = window.speechSynthesis.getVoices().find(v => v.lang.includes("it") && (v.name.includes("Elsa") || v.name.includes("Female")));
+        // Cerca voce preferibilmente maschile per JARVIS
+        if (!cachedVoice) cachedVoice = window.speechSynthesis.getVoices().find(v => v.lang.includes("it") && (v.name.includes("Diego") || v.name.includes("Male") || v.name.includes("Cosimo")));
         if (cachedVoice) u.voice = cachedVoice;
+        
         u.onend = u.onerror = () => { resumeRecognitionAfterSpeech(); res(); };
         setMode("speaking");
         window.speechSynthesis.speak(u);
@@ -805,7 +809,7 @@
       setMode("speaking");
 
       try {
-        const res = await fetch(WORKER_URL + "/tts", {
+        const res = await fetch(`${BASE_URL}/tts`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text })
@@ -828,6 +832,7 @@
       elements.muteButton.textContent = muted ? "Riattiva risposta" : "Silenzia risposta";
       elements.muteButton.className = muted ? "hud-button danger" : "hud-button";
     });
+    
     elements.manualForm.addEventListener("submit", e => {
       e.preventDefault();
       const q = elements.manualInput.value.trim();
@@ -860,7 +865,7 @@
     }
 
     console.log("J.A.R.V.I.S. inizializzato.");
-    console.log("Worker URL:", WORKER_URL);
+    console.log("Worker URL:", BASE_URL);
   </script>
 </body>
 </html>
