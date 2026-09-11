@@ -354,7 +354,7 @@
   <script>
     "use strict";
 
-    // *** MODIFICA QUESTA RIGA CON IL TUO URL DEL WORKER ***
+    // *** URL DEL WORKER CLOUDFLARE ***
     const WORKER_URL = "https://jarvis-proxy.francesco-32105.workers.dev";
     
     // Assicura che l'URL base non abbia lo slash alla fine
@@ -659,6 +659,7 @@
       setMode("off");
     }
 
+    // --- NUOVA LOGICA: SMART FALLBACK PER LE APPLICAZIONI ---
     function executeJarvisAction(action, preparedWindow) {
       if (!action) {
         if (preparedWindow && !preparedWindow.closed) try { preparedWindow.close(); } catch {}
@@ -669,15 +670,36 @@
       const isCustomProtocol = action.url && /^[a-z][a-z0-9+.-]*:/i.test(action.url) && !/^https?:\/\//i.test(action.url);
 
       if (action.type === "app" || isCustomProtocol) {
-        try {
-          const a = document.createElement("a");
-          a.href = action.url; a.style.display = "none";
-          document.body.appendChild(a); a.click(); a.remove();
-          if (action.fallbackUrl) setTimeout(() => { try { window.open(action.fallbackUrl, "_blank", "noopener"); } catch {} }, 1500);
-          return true;
-        } catch { return false; }
+        let appLaunched = false;
+        
+        // Se il browser perde il focus, significa che l'app nativa si è aperta (o è apparso il popup di sistema)
+        const blurHandler = () => { appLaunched = true; };
+        window.addEventListener('blur', blurHandler, { once: true });
+
+        // Tenta di avviare l'app nativa dal PC o dal telefono
+        window.location.href = action.url;
+
+        // Fallback intelligente al sito web
+        if (action.fallbackUrl) {
+          setTimeout(() => {
+            window.removeEventListener('blur', blurHandler);
+            if (!appLaunched) {
+              // L'app non c'è: ripiega aprendo il sito web
+              if (preparedWindow && !preparedWindow.closed) { 
+                preparedWindow.location.href = action.fallbackUrl; 
+              } else {
+                window.open(action.fallbackUrl, "_blank", "noopener");
+              }
+            } else {
+              // L'app si è aperta correttamente: puliamo la finestra fantasma se esiste
+              if (preparedWindow && !preparedWindow.closed) try { preparedWindow.close(); } catch {}
+            }
+          }, 1800); // Attende 1.8 secondi prima di arrendersi
+        }
+        return true;
       }
 
+      // Gestione standard per l'apertura di normali siti web
       if (action.autoOpen === false) {
         if (preparedWindow && !preparedWindow.closed) try { preparedWindow.close(); } catch {}
         return true;
@@ -689,6 +711,7 @@
         return true;
       } catch { return false; }
     }
+    // ---------------------------------------------------------
 
     function createActionButton(action) {
       if (!action?.url) return null;
