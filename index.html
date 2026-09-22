@@ -64,7 +64,7 @@
     <header class="top-navigation">
       <div class="brand-group"><div class="brand-mark">JS</div><div class="brand-copy"><h1>J.A.R.V.I.S.</h1><p>Just A Rather Very Intelligent System</p></div></div>
       <nav class="system-tabs"><span class="active">Sintesi</span><span>CPU</span><span>Rete</span><span>Comandi</span></nav>
-      <div class="identity-panel"><div class="identity-avatar"></div><div><div class="identity-title">JARVIS OS · VER 4.4</div><div class="identity-line">UTENTE: <span id="userName">FRANCESCO</span></div><div id="systemClock" class="identity-clock">--:--:--</div></div></div>
+      <div class="identity-panel"><div class="identity-avatar"></div><div><div class="identity-title">JARVIS OS · VER 4.5</div><div class="identity-line">UTENTE: <span id="userName">FRANCESCO</span></div><div id="systemClock" class="identity-clock">--:--:--</div></div></div>
     </header>
 
     <section class="cockpit">
@@ -89,7 +89,7 @@
 
     <section class="command-deck">
       <section class="voice-controls">
-        <div class="deck-title">Controllo vocale</div><div class="main-controls"><button id="voiceToggleButton" class="hud-button primary" type="button">Attiva voce</button><button id="muteButton" class="hud-button" type="button">Silenzia risposta</button></div><div class="voice-help">Pronuncia: “Ehi Jarvis, spiegami il teorema di Pitagora”</div>
+        <div class="deck-title">Controllo vocale</div><div class="main-controls"><button id="voiceToggleButton" class="hud-button primary" type="button">Attiva voce</button><button id="muteButton" class="hud-button" type="button">Silenzia risposta</button></div><div class="voice-help">Pronuncia: “Ehi Jarvis, spiegami la formula del montante”</div>
       </section>
       <section class="communication-panel">
         <div class="panel-header"><span>Terminale comunicazioni</span><span class="panel-indicator"></span></div>
@@ -258,11 +258,9 @@
       recognitionRunning = false; setDiagnosticValue(elements.diagnosticMicrophone, "NON ATTIVO", "warning"); elements.interimTranscript.textContent = "Premi “Attiva voce” per iniziare."; setMode("off");
     }
 
-    // URL TRADINGVIEW CORRETTO CON 'EURONEXT-'
     function getTVSymbolForURL(yahooTicker) {
       if (!yahooTicker) return ""; 
       let tv = yahooTicker.toUpperCase().trim();
-      
       if (tv.endsWith(".BR")) return "EURONEXT-" + tv.replace(".BR", ""); 
       if (tv.endsWith(".MI")) return "MIL-" + tv.replace(".MI", ""); 
       if (tv.endsWith(".PA")) return "EURONEXT-" + tv.replace(".PA", "");
@@ -272,22 +270,25 @@
       if (tv.endsWith(".MC")) return "BME-" + tv.replace(".MC", "");
       if (tv.endsWith("-USD")) return "CRYPTO-" + tv.replace("-USD", ""); 
       if (tv.startsWith("^")) return tv.replace("^", ""); 
-      
       if (tv.startsWith("EBR:")) return "EURONEXT-" + tv.replace("EBR:", "").trim();
       if (tv.startsWith("EPA:")) return "EURONEXT-" + tv.replace("EPA:", "").trim();
       if (tv.startsWith("BIT:") || tv.startsWith("MIL:")) return "MIL-" + (tv.split(":")[1] || "").trim();
-      
       if (tv.includes(":")) return tv.replace(":", "-");
       return tv; 
     }
 
-    // FILTRO PER PULIRE I SIMBOLI MATEMATICI E STRANI (LaTeX/Markdown)
+    // ============================================================
+    // SUPER FILTRO ANTILAATEX / MATEMATICA PULITA
+    // ============================================================
     function cleanMathSymbols(text) {
       if (!text) return "";
       return text
+        .replace(/\\\[\vert{}\\\]|\\\(\vert{}\\\)/g, "") // Rimuove delimitatori LaTeX \[ \] \( \)
         .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, "$1 diviso $2")
         .replace(/\\sqrt\{([^}]+)\}/g, "radice quadrata di $1")
-        .replace(/[\*\_\$\#\\]/g, " ") // Rimuove asterischi, cancelletti e barre di formattazione grezza
+        .replace(/\\cdot/g, " per ")
+        .replace(/\\left|\\right/g, "")
+        .replace(/[\*\_\$\#\\]/g, " ") // Rimuove asterischi, cancelletti e backslash residui
         .replace(/\s+/g, " ")
         .trim();
     }
