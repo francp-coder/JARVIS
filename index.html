@@ -64,7 +64,7 @@
     <header class="top-navigation">
       <div class="brand-group"><div class="brand-mark">JS</div><div class="brand-copy"><h1>J.A.R.V.I.S.</h1><p>Just A Rather Very Intelligent System</p></div></div>
       <nav class="system-tabs"><span class="active">Sintesi</span><span>CPU</span><span>Rete</span><span>Comandi</span></nav>
-      <div class="identity-panel"><div class="identity-avatar"></div><div><div class="identity-title">JARVIS OS · VER 4.1</div><div class="identity-line">UTENTE: <span id="userName">FRANCESCO</span></div><div id="systemClock" class="identity-clock">--:--:--</div></div></div>
+      <div class="identity-panel"><div class="identity-avatar"></div><div><div class="identity-title">JARVIS OS · VER 4.2</div><div class="identity-line">UTENTE: <span id="userName">FRANCESCO</span></div><div id="systemClock" class="identity-clock">--:--:--</div></div></div>
     </header>
 
     <section class="cockpit">
@@ -258,26 +258,26 @@
       recognitionRunning = false; setDiagnosticValue(elements.diagnosticMicrophone, "NON ATTIVO", "warning"); elements.interimTranscript.textContent = "Premi “Attiva voce” per iniziare."; setMode("off");
     }
 
-    // NUOVO TRADUTTORE DI MERCATI PER TRADINGVIEW
+    // ============================================================
+    // TRADUZIONE INFALLIBILE PER I LINK TRADINGVIEW
+    // ============================================================
     function getTVSymbolForURL(yahooTicker) {
-      if (!yahooTicker) return ""; let tv = yahooTicker.toUpperCase().trim();
+      if (!yahooTicker) return ""; 
+      let tv = yahooTicker.toUpperCase().trim();
       
-      // Se DeepSeek ha mantenuto i prefissi come richiesto
-      if (tv.startsWith("EBR:")) return tv.replace("EBR:", "EURONEXT-");
-      if (tv.startsWith("BIT:") || tv.startsWith("MIL:")) return tv.split(":")[1] ? "MIL-" + tv.split(":")[1] : tv;
-      if (tv.startsWith("EPA:")) return tv.replace("EPA:", "EURONEXT-");
-
-      // Traduzione dai suffissi Yahoo Finance (.BR, .MI, ecc.)
-      if (tv.includes(".MI")) return "MIL-" + tv.replace(".MI", ""); 
-      if (tv.includes(".PA")) return "EURONEXT-" + tv.replace(".PA", "");
-      if (tv.includes(".BR")) return "EURONEXT-" + tv.replace(".BR", ""); 
-      if (tv.includes(".AS")) return "EURONEXT-" + tv.replace(".AS", "");
-      if (tv.includes(".DE")) return "XETR-" + tv.replace(".DE", "");
-      if (tv.includes(".L")) return "LSE-" + tv.replace(".L", ""); 
-      if (tv.includes(".MC")) return "BME-" + tv.replace(".MC", "");
-      if (tv.includes("-USD")) return "CRYPTO-" + tv.replace("-USD", ""); 
+      // Mappatura INFALLIBILE dei suffissi Yahoo Finance per TradingView (Europa)
+      if (tv.endsWith(".BR")) return "EBR-" + tv.replace(".BR", ""); 
+      if (tv.endsWith(".MI")) return "MIL-" + tv.replace(".MI", ""); 
+      if (tv.endsWith(".PA")) return "EPA-" + tv.replace(".PA", "");
+      if (tv.endsWith(".AS")) return "AMS-" + tv.replace(".AS", "");
+      if (tv.endsWith(".DE")) return "XETR-" + tv.replace(".DE", "");
+      if (tv.endsWith(".L")) return "LSE-" + tv.replace(".L", ""); 
+      if (tv.endsWith(".MC")) return "BME-" + tv.replace(".MC", "");
+      if (tv.endsWith("-USD")) return "CRYPTO-" + tv.replace("-USD", ""); 
       if (tv.startsWith("^")) return tv.replace("^", ""); 
       
+      // Fallback di sicurezza
+      if (tv.includes(":")) return tv.replace(":", "-");
       return tv; 
     }
 
