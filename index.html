@@ -64,7 +64,7 @@
     <header class="top-navigation">
       <div class="brand-group"><div class="brand-mark">JS</div><div class="brand-copy"><h1>J.A.R.V.I.S.</h1><p>Just A Rather Very Intelligent System</p></div></div>
       <nav class="system-tabs"><span class="active">Sintesi</span><span>CPU</span><span>Rete</span><span>Comandi</span></nav>
-      <div class="identity-panel"><div class="identity-avatar"></div><div><div class="identity-title">JARVIS OS · VER 4.0</div><div class="identity-line">UTENTE: <span id="userName">FRANCESCO</span></div><div id="systemClock" class="identity-clock">--:--:--</div></div></div>
+      <div class="identity-panel"><div class="identity-avatar"></div><div><div class="identity-title">JARVIS OS · VER 4.1</div><div class="identity-line">UTENTE: <span id="userName">FRANCESCO</span></div><div id="systemClock" class="identity-clock">--:--:--</div></div></div>
     </header>
 
     <section class="cockpit">
@@ -89,7 +89,7 @@
 
     <section class="command-deck">
       <section class="voice-controls">
-        <div class="deck-title">Controllo vocale</div><div class="main-controls"><button id="voiceToggleButton" class="hud-button primary" type="button">Attiva voce</button><button id="muteButton" class="hud-button" type="button">Silenzia risposta</button></div><div class="voice-help">Pronuncia: “Ehi Jarvis, analizza Apple”</div>
+        <div class="deck-title">Controllo vocale</div><div class="main-controls"><button id="voiceToggleButton" class="hud-button primary" type="button">Attiva voce</button><button id="muteButton" class="hud-button" type="button">Silenzia risposta</button></div><div class="voice-help">Pronuncia: “Ehi Jarvis, analizza EBR: UCB”</div>
       </section>
       <section class="communication-panel">
         <div class="panel-header"><span>Terminale comunicazioni</span><span class="panel-indicator"></span></div>
@@ -258,21 +258,32 @@
       recognitionRunning = false; setDiagnosticValue(elements.diagnosticMicrophone, "NON ATTIVO", "warning"); elements.interimTranscript.textContent = "Premi “Attiva voce” per iniziare."; setMode("off");
     }
 
+    // NUOVO TRADUTTORE DI MERCATI PER TRADINGVIEW
     function getTVSymbolForURL(yahooTicker) {
-      if (!yahooTicker) return ""; let tv = yahooTicker.toUpperCase();
-      if (tv.includes(".MI")) return "MIL-" + tv.replace(".MI", ""); if (tv.includes(".PA")) return "EURONEXT-" + tv.replace(".PA", "");
-      if (tv.includes(".BR")) return "EURONEXT-" + tv.replace(".BR", ""); if (tv.includes(".DE")) return "XETR-" + tv.replace(".DE", "");
-      if (tv.includes(".L")) return "LSE-" + tv.replace(".L", ""); if (tv.includes(".MC")) return "BME-" + tv.replace(".MC", "");
-      if (tv.includes("-USD")) return "CRYPTO-" + tv.replace("-USD", ""); if (tv.startsWith("^")) return tv.replace("^", ""); return tv; 
+      if (!yahooTicker) return ""; let tv = yahooTicker.toUpperCase().trim();
+      
+      // Se DeepSeek ha mantenuto i prefissi come richiesto
+      if (tv.startsWith("EBR:")) return tv.replace("EBR:", "EURONEXT-");
+      if (tv.startsWith("BIT:") || tv.startsWith("MIL:")) return tv.split(":")[1] ? "MIL-" + tv.split(":")[1] : tv;
+      if (tv.startsWith("EPA:")) return tv.replace("EPA:", "EURONEXT-");
+
+      // Traduzione dai suffissi Yahoo Finance (.BR, .MI, ecc.)
+      if (tv.includes(".MI")) return "MIL-" + tv.replace(".MI", ""); 
+      if (tv.includes(".PA")) return "EURONEXT-" + tv.replace(".PA", "");
+      if (tv.includes(".BR")) return "EURONEXT-" + tv.replace(".BR", ""); 
+      if (tv.includes(".AS")) return "EURONEXT-" + tv.replace(".AS", "");
+      if (tv.includes(".DE")) return "XETR-" + tv.replace(".DE", "");
+      if (tv.includes(".L")) return "LSE-" + tv.replace(".L", ""); 
+      if (tv.includes(".MC")) return "BME-" + tv.replace(".MC", "");
+      if (tv.includes("-USD")) return "CRYPTO-" + tv.replace("-USD", ""); 
+      if (tv.startsWith("^")) return tv.replace("^", ""); 
+      
+      return tv; 
     }
 
-    // ==========================================
-    // PONTE CLOUDFLARE <-> PYTHON LOCALE
-    // ==========================================
     function executeJarvisAction(action, preparedWindow) {
       if (!action) { if (preparedWindow && !preparedWindow.closed) try { preparedWindow.close(); } catch {} return true; }
       
-      // COMANDI VERSO METATRADER 5 (PYTHON)
       if (action.type === "local") {
         elements.lastActionValue.textContent = "SISTEMA LOCALE";
         if (preparedWindow && !preparedWindow.closed) try { preparedWindow.close(); } catch {}
@@ -288,7 +299,6 @@
         return true;
       }
 
-      // NUOVO FLUSSO FINANZIARIO: 1. Python scarica i dati -> 2. Cloudflare analizza i dati
       if (action.type === "local_finance") {
         elements.lastActionValue.textContent = "SCANSIONE FINANZA";
         if (preparedWindow && !preparedWindow.closed) try { preparedWindow.close(); } catch {}
@@ -297,19 +307,17 @@
         .then(res => res.json())
         .then(async localData => {
             if (localData.status === "success") {
-                // Prepara la richiesta per DeepSeek con i dati di bilancio completi
                 const promptText = `Azienda: ${action.company}. Ticker Yahoo trovato: ${localData.ticker}. Dati recuperati: ${JSON.stringify(localData.data)}`;
                 
-                // Manda i dati a Cloudflare per l'analisi
                 const res2 = await fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: promptText, isDirectAnalysis: true }) });
                 const finalData = await res2.json();
                 
-                // Parla ed elabora a schermo
                 speak(finalData.text);
                 const div = document.createElement("div"); div.textContent = finalData.text; div.style.color = "var(--cyan-bright)"; div.style.marginTop = "10px"; div.style.borderLeft = "2px solid var(--cyan)"; div.style.paddingLeft = "8px"; elements.readoutJarvis.appendChild(div); elements.readout.scrollTop = elements.readout.scrollHeight;
                 
-                // Apri TradingView in automatico
-                const tvUrl = "https://www.tradingview.com/symbols/" + getTVSymbolForURL(localData.ticker) + "/";
+                // Creazione automatica link corretto di TradingView
+                const tvSymbol = getTVSymbolForURL(localData.ticker);
+                const tvUrl = "https://www.tradingview.com/symbols/" + tvSymbol + "/";
                 window.open(tvUrl, "_blank", "noopener");
             } else {
                 speak("Signore, c'è stato un problema nel download del bilancio tramite Python.");
@@ -318,7 +326,6 @@
         return true;
       }
 
-      // AZIONI WEB NORMALI
       if (!action.autoOpen) { if (preparedWindow && !preparedWindow.closed) try { preparedWindow.close(); } catch {} return true; }
       elements.lastActionValue.textContent = String(action.label || action.type || "ESEGUITA").slice(0, 22).toUpperCase();
       if (action.type === "app" || /^[a-z][a-z0-9+.-]*:/i.test(action.url) && !/^https?:\/\//i.test(action.url)) {
