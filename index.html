@@ -64,7 +64,7 @@
     <header class="top-navigation">
       <div class="brand-group"><div class="brand-mark">JS</div><div class="brand-copy"><h1>J.A.R.V.I.S.</h1><p>Just A Rather Very Intelligent System</p></div></div>
       <nav class="system-tabs"><span class="active">Sintesi</span><span>CPU</span><span>Rete</span><span>Comandi</span></nav>
-      <div class="identity-panel"><div class="identity-avatar"></div><div><div class="identity-title">JARVIS OS · VER 5.0</div><div class="identity-line">UTENTE: <span id="userName">FRANCESCO</span></div><div id="systemClock" class="identity-clock">--:--:--</div></div></div>
+      <div class="identity-panel"><div class="identity-avatar"></div><div><div class="identity-title">JARVIS OS · VER 5.1</div><div class="identity-line">UTENTE: <span id="userName">FRANCESCO</span></div><div id="systemClock" class="identity-clock">--:--:--</div></div></div>
     </header>
 
     <section class="cockpit">
@@ -259,16 +259,13 @@
     }
 
     // ============================================================
-    // TRADINGVIEW URL MAPPER (CORRETTO ED INFALLIBILE PER EURONEXT)
+    // TRADINGVIEW URL MAPPER (MAPPATURA CORRETTA EURONEXT)
     // ============================================================
     function getTVSymbolForURL(yahooTicker) {
       if (!yahooTicker) return ""; 
-      let tv = yahooTicker.toUpperCase().trim();
+      let tv = yahooTicker.toUpperCase().trim().replace(/\s+/g, '');
       
-      // Rimuovi spazi interni
-      tv = tv.replace(/\s+/g, '');
-      
-      // Regola infallibile: Bruxelles, Parigi, Amsterdam, Lisbona vanno tutti su EURONEXT-
+      // RISOLUZIONE DEFINITIVA: EURONEXT per Bruxelles (.BR), Parigi (.PA), Amsterdam (.AS), Lisbona (.LS)
       if (tv.endsWith(".BR") || tv.endsWith(".PA") || tv.endsWith(".AS") || tv.endsWith(".LS")) {
          return "EURONEXT-" + tv.split(".")[0];
       }
@@ -276,8 +273,8 @@
       if (tv.endsWith(".DE")) return "XETR-" + tv.split(".")[0];
       if (tv.endsWith(".L")) return "LSE-" + tv.split(".")[0];
       if (tv.endsWith(".MC")) return "BME-" + tv.split(".")[0];
-      if (tv.endsWith("-USD")) return "CRYPTO-" + tv.replace("-USD", "");
-      if (tv.startsWith("^")) return tv.replace("^", "");
+      if (tv.endsWith("-USD")) return "CRYPTO-" + tv.replace("-USD", ""); 
+      if (tv.startsWith("^")) return tv.replace("^", ""); 
       
       // Gestione diretta per l'input parlato (es. EBR:UCB -> EURONEXT-UCB)
       if (tv.startsWith("EBR:") || tv.startsWith("EPA:") || tv.startsWith("AMS:") || tv.startsWith("ELI:")) {
