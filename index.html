@@ -64,7 +64,7 @@
     <header class="top-navigation">
       <div class="brand-group"><div class="brand-mark">JS</div><div class="brand-copy"><h1>J.A.R.V.I.S.</h1><p>Just A Rather Very Intelligent System</p></div></div>
       <nav class="system-tabs"><span class="active">Sintesi</span><span>CPU</span><span>Rete</span><span>Comandi</span></nav>
-      <div class="identity-panel"><div class="identity-avatar"></div><div><div class="identity-title">JARVIS OS · VER 4.6</div><div class="identity-line">UTENTE: <span id="userName">FRANCESCO</span></div><div id="systemClock" class="identity-clock">--:--:--</div></div></div>
+      <div class="identity-panel"><div class="identity-avatar"></div><div><div class="identity-title">JARVIS OS · VER 5.0</div><div class="identity-line">UTENTE: <span id="userName">FRANCESCO</span></div><div id="systemClock" class="identity-clock">--:--:--</div></div></div>
     </header>
 
     <section class="cockpit">
@@ -255,52 +255,64 @@
       voiceEnabled = false; recognitionSuspended = false; clearCommandBuffer();
       if (recognitionRestartTimer) window.clearTimeout(recognitionRestartTimer);
       if (recognition) { try { recognition.onend = null; recognition.stop(); } catch {} recognition = null; }
-      recognitionRunning = false; setDiagnosticValue(elements.diagnosticMicrophone, "NON ATTIVO", "warning"); elements.interimTranscript.textContent = "Premi “Attiva voce” per iniziare REACTOR."; setMode("off");
+      recognitionRunning = false; setDiagnosticValue(elements.diagnosticMicrophone, "NON ATTIVO", "warning"); elements.interimTranscript.textContent = "Premi “Attiva voce” per iniziare."; setMode("off");
     }
 
     // ============================================================
-    // TRADINGVIEW URL MAPPER (CORRETTO AL 100% PER L'EUROPA)
+    // TRADINGVIEW URL MAPPER (CORRETTO ED INFALLIBILE PER EURONEXT)
     // ============================================================
     function getTVSymbolForURL(yahooTicker) {
       if (!yahooTicker) return ""; 
       let tv = yahooTicker.toUpperCase().trim();
       
-      // Mappatura esatta riconosciuta da TradingView per i mercati europei
-      if (tv.endsWith(".BR")) return "EBR-" + tv.replace(".BR", ""); 
-      if (tv.endsWith(".MI")) return "MIL-" + tv.replace(".MI", ""); 
-      if (tv.endsWith(".PA")) return "EPA-" + tv.replace(".PA", "");
-      if (tv.endsWith(".AS")) return "AMS-" + tv.replace(".AS", "");
-      if (tv.endsWith(".DE")) return "XETR-" + tv.replace(".DE", "");
-      if (tv.endsWith(".L")) return "LSE-" + tv.replace(".L", ""); 
-      if (tv.endsWith(".MC")) return "BME-" + tv.replace(".MC", "");
-      if (tv.endsWith("-USD")) return "CRYPTO-" + tv.replace("-USD", ""); 
-      if (tv.startsWith("^")) return tv.replace("^", ""); 
+      // Rimuovi spazi interni
+      tv = tv.replace(/\s+/g, '');
       
-      if (tv.startsWith("EBR:")) return "EBR-" + tv.replace("EBR:", "").trim();
-      if (tv.startsWith("EPA:")) return "EPA-" + tv.replace("EPA:", "").trim();
-      if (tv.startsWith("BIT:") || tv.startsWith("MIL:")) return "MIL-" + (tv.split(":")[1] || "").trim();
+      // Regola infallibile: Bruxelles, Parigi, Amsterdam, Lisbona vanno tutti su EURONEXT-
+      if (tv.endsWith(".BR") || tv.endsWith(".PA") || tv.endsWith(".AS") || tv.endsWith(".LS")) {
+         return "EURONEXT-" + tv.split(".")[0];
+      }
+      if (tv.endsWith(".MI")) return "MIL-" + tv.split(".")[0];
+      if (tv.endsWith(".DE")) return "XETR-" + tv.split(".")[0];
+      if (tv.endsWith(".L")) return "LSE-" + tv.split(".")[0];
+      if (tv.endsWith(".MC")) return "BME-" + tv.split(".")[0];
+      if (tv.endsWith("-USD")) return "CRYPTO-" + tv.replace("-USD", "");
+      if (tv.startsWith("^")) return tv.replace("^", "");
+      
+      // Gestione diretta per l'input parlato (es. EBR:UCB -> EURONEXT-UCB)
+      if (tv.startsWith("EBR:") || tv.startsWith("EPA:") || tv.startsWith("AMS:") || tv.startsWith("ELI:")) {
+         return "EURONEXT-" + tv.split(":")[1];
+      }
+      if (tv.startsWith("BIT:") || tv.startsWith("MIL:")) {
+         return "MIL-" + tv.split(":")[1];
+      }
       
       if (tv.includes(":")) return tv.replace(":", "-");
       return tv; 
     }
 
     // ============================================================
-    // PULIZIA AGGRESSIVA LaTeX / FORMULE / SIMBOLI
+    // PULIZIA FINALE: STERMINIO DEL LATEX E DELLE TABELLE
     // ============================================================
     function cleanMathSymbols(text) {
       if (!text) return "";
       return text
-        .replace(/\\\[\vert{}\\\]|\\\(\vert{}\\\)/g, "")
+        .replace(/\\\[/g, "")         .replace(/\\\]/g, "")
+        .replace(/\\\(/g, "")         .replace(/\\\)/g, "")
         .replace(/\\dfrac\{([^}]+)\}\{([^}]+)\}/g, "$1 diviso $2")
         .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, "$1 diviso $2")
         .replace(/\\sqrt\[([^\]]+)\]\{([^}]+)\}/g, "radice $1-esima di $2")
         .replace(/\\sqrt\{([^}]+)\}/g, "radice quadrata di $1")
         .replace(/\\cdot/g, " per ")
-        .replace(/\\left|\\right/g, "")
-        .replace(/\\ln/g, "logaritmo naturale di")
-        .replace(/\\e\^/g, "e elevato alla")
-        .replace(/[\*\_\$\#\\]/g, " ")
-        .replace(/\|[^|]+\|/g, "") // Rimuove tabelle markdown
+        .replace(/\\times/g, " per ")
+        .replace(/\\left/g, "")
+        .replace(/\\right/g, "")
+        .replace(/\\ln/g, "logaritmo naturale di ")
+        .replace(/\\e\^/g, "e elevato alla ")
+        .replace(/\\delta/g, "delta")
+        .replace(/[\*\_\$\#\\]/g, "") // Rimuove residui vari
+        .replace(/\{|\}/g, "") // Rimuove le parentesi graffe
+        .replace(/\|[^|]+\|/g, "") // Elimina le tabelle
         .replace(/\s+/g, " ")
         .trim();
     }
