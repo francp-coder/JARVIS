@@ -64,7 +64,7 @@
     <header class="top-navigation">
       <div class="brand-group"><div class="brand-mark">JS</div><div class="brand-copy"><h1>J.A.R.V.I.S.</h1><p>Just A Rather Very Intelligent System</p></div></div>
       <nav class="system-tabs"><span class="active">Sintesi</span><span>CPU</span><span>Rete</span><span>Comandi</span></nav>
-      <div class="identity-panel"><div class="identity-avatar"></div><div><div class="identity-title">JARVIS OS · VER 6.0</div><div class="identity-line">UTENTE: <span id="userName">FRANCESCO</span></div><div id="systemClock" class="identity-clock">--:--:--</div></div></div>
+      <div class="identity-panel"><div class="identity-avatar"></div><div><div class="identity-title">JARVIS OS · VER 7.0</div><div class="identity-line">UTENTE: <span id="userName">FRANCESCO</span></div><div id="systemClock" class="identity-clock">--:--:--</div></div></div>
     </header>
 
     <section class="cockpit">
@@ -89,7 +89,7 @@
 
     <section class="command-deck">
       <section class="voice-controls">
-        <div class="deck-title">Controllo voce</div><div class="main-controls"><button id="voiceToggleButton" class="hud-button primary" type="button">Attiva voce</button><button id="muteButton" class="hud-button" type="button">Silenzia risposta</button></div><div class="voice-help">Pronuncia: “Ehi Jarvis, analizza UCB”</div>
+        <div class="deck-title">Controllo voce</div><div class="main-controls"><button id="voiceToggleButton" class="hud-button primary" type="button">Attiva voce</button><button id="muteButton" class="hud-button" type="button">Silenzia risposta</button></div><div class="voice-help">Pronuncia: “Ehi Jarvis, analizza EBR: UCB”</div>
       </section>
       <section class="communication-panel">
         <div class="panel-header"><span>Terminale comunicazioni</span><span class="panel-indicator"></span></div>
@@ -196,6 +196,20 @@
       return { found: false, remainder: "" };
     }
 
+    // ============================================================
+    // NUOVA FUNZIONE: SPEGNE LA VOCE ISTANTANEAMENTE (BARGE-IN)
+    // ============================================================
+    function stopSpeaking() {
+      if (currentSpeechAudio) { 
+        try { 
+          currentSpeechAudio.pause(); 
+          currentSpeechAudio.currentTime = 0; 
+        } catch {} 
+        currentSpeechAudio = null; 
+      }
+      window.speechSynthesis.cancel();
+    }
+
     function clearCommandBuffer() { capturedFinal = ""; capturedInterim = ""; if (silenceTimer) window.clearTimeout(silenceTimer); silenceTimer = null; }
     function updateCapturedTranscript() { const c = `${capturedFinal} ${capturedInterim}`.replace(/\s+/g, " ").trim(); elements.interimTranscript.textContent = c ? `“${c}”` : "Ti ascolto..."; }
     function resetSilenceTimer() { if (silenceTimer) window.clearTimeout(silenceTimer); silenceTimer = window.setTimeout(finalizeVoiceCommand, 1450); }
@@ -212,6 +226,7 @@
       const eng = new SpeechRecognitionClass(); eng.lang = "it-IT"; eng.continuous = true; eng.interimResults = true; eng.maxAlternatives = 1;
       eng.onstart = () => { recognitionRunning = true; setDiagnosticValue(elements.diagnosticMicrophone, "ATTIVO", "good"); if (voiceEnabled && !recognitionSuspended && mode !== "capturing" && mode !== "thinking" && mode !== "speaking") setMode("awake"); };
       eng.onaudiostart = () => bumpAudioLevel(0.15); eng.onsoundstart = () => bumpAudioLevel(0.4); eng.onspeechstart = () => bumpAudioLevel(0.9);
+      
       eng.onresult = e => {
         bumpAudioLevel(0.75); let ft = "", it = "", conf = 0;
         for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -219,18 +234,27 @@
           r.isFinal ? ft = joinUnique(ft, t) : it = joinUnique(it, t);
         }
         if (conf > 0) elements.confidenceValue.textContent = `${Math.round(conf * 100)}%`;
-        if (mode === "awake") {
-          const w = findWakeWord(ft || it); if (!w.found) return;
-          clearCommandBuffer(); setMode("capturing");
-          if (w.remainder) { ft ? capturedFinal = w.remainder : capturedInterim = w.remainder; resetSilenceTimer(); }
-          updateCapturedTranscript(); return;
+        
+        // INTERRUZIONE INTELLIGENTE (Ascolta anche mentre parla)
+        if (mode === "awake" || mode === "speaking") {
+          const w = findWakeWord(ft || it); 
+          if (w.found) {
+            stopSpeaking(); // Trancia subito l'audio
+            clearCommandBuffer(); 
+            setMode("capturing");
+            if (w.remainder) { ft ? capturedFinal = w.remainder : capturedInterim = w.remainder; resetSilenceTimer(); }
+            updateCapturedTranscript(); 
+            return;
+          }
         }
+        
         if (mode === "capturing") {
           if (ft) { const w = findWakeWord(ft); capturedFinal = joinUnique(capturedFinal, w.found ? w.remainder : ft); capturedInterim = ""; }
           if (it) { const w = findWakeWord(it); capturedInterim = w.found ? w.remainder : it; }
           updateCapturedTranscript(); resetSilenceTimer();
         }
       };
+      
       eng.onerror = e => {
         recognitionRunning = false;
         if (["not-allowed", "service-not-allowed", "audio-capture"].includes(e.error)) {
@@ -258,15 +282,9 @@
       recognitionRunning = false; setDiagnosticValue(elements.diagnosticMicrophone, "NON ATTIVO", "warning"); elements.interimTranscript.textContent = "Premi “Attiva voce” per iniziare."; setMode("off");
     }
 
-    // ============================================================
-    // TRADINGVIEW URL MAPPER (LA REGOLA EURONEXT ASSOLUTA)
-    // ============================================================
     function getTVSymbolForURL(yahooTicker) {
       if (!yahooTicker) return ""; 
       let tv = yahooTicker.toUpperCase().trim().replace(/\s+/g, '');
-      
-      // REGOLA INFALLIBILE: Tutto il circuito EURONEXT (Belgio, Francia, Olanda, Portogallo) 
-      // richiede espressamente il prefisso "EURONEXT-" in TradingView.
       if (tv.endsWith(".BR") || tv.endsWith(".PA") || tv.endsWith(".AS") || tv.endsWith(".LS")) {
          return "EURONEXT-" + tv.split(".")[0];
       }
@@ -276,34 +294,12 @@
       if (tv.endsWith(".MC")) return "BME-" + tv.split(".")[0];
       if (tv.endsWith("-USD")) return "CRYPTO-" + tv.replace("-USD", ""); 
       if (tv.startsWith("^")) return tv.replace("^", ""); 
-      
       return tv; 
     }
 
-    // ============================================================
-    // PULIZIA FINALE: STERMINIO DEL LATEX
-    // ============================================================
     function cleanMathSymbols(text) {
       if (!text) return "";
-      return text
-        .replace(/\\\[/g, "")         .replace(/\\\]/g, "")
-        .replace(/\\\(/g, "")         .replace(/\\\)/g, "")
-        .replace(/\\dfrac\{([^}]+)\}\{([^}]+)\}/g, "$1 diviso $2")
-        .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, "$1 diviso $2")
-        .replace(/\\sqrt\[([^\]]+)\]\{([^}]+)\}/g, "radice $1-esima di $2")
-        .replace(/\\sqrt\{([^}]+)\}/g, "radice quadrata di $1")
-        .replace(/\\cdot/g, " per ")
-        .replace(/\\times/g, " per ")
-        .replace(/\\left/g, "")
-        .replace(/\\right/g, "")
-        .replace(/\\ln/g, "logaritmo naturale di ")
-        .replace(/\\e\^/g, "e elevato alla ")
-        .replace(/\\delta/g, "delta")
-        .replace(/[\*\_\$\#\\]/g, "") 
-        .replace(/\{|\}/g, "") 
-        .replace(/\|[^|]+\|/g, "") 
-        .replace(/\s+/g, " ")
-        .trim();
+      return text.replace(/\\\[/g, "").replace(/\\\]/g, "").replace(/\\\(/g, "").replace(/\\\)/g, "").replace(/\\dfrac\{([^}]+)\}\{([^}]+)\}/g, "$1 diviso $2").replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, "$1 diviso $2").replace(/\\sqrt\[([^\]]+)\]\{([^}]+)\}/g, "radice $1-esima di $2").replace(/\\sqrt\{([^}]+)\}/g, "radice quadrata di $1").replace(/\\cdot/g, " per ").replace(/\\times/g, " per ").replace(/\\left/g, "").replace(/\\right/g, "").replace(/\\ln/g, "logaritmo naturale di ").replace(/\\e\^/g, "e elevato alla ").replace(/\\delta/g, "delta").replace(/[\*\_\$\#\\]/g, "").replace(/\{|\}/g, "").replace(/\|[^|]+\|/g, "").replace(/\s+/g, " ").trim();
     }
 
     function executeJarvisAction(action, preparedWindow) {
@@ -312,7 +308,6 @@
       if (action.type === "local") {
         elements.lastActionValue.textContent = "SISTEMA LOCALE";
         if (preparedWindow && !preparedWindow.closed) try { preparedWindow.close(); } catch {}
-        
         fetch("http://127.0.0.1:5000/execute", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ command: action.command }) })
         .then(res => res.json())
         .then(data => {
@@ -327,26 +322,22 @@
       if (action.type === "local_finance") {
         elements.lastActionValue.textContent = "SCANSIONE FINANZA";
         if (preparedWindow && !preparedWindow.closed) try { preparedWindow.close(); } catch {}
-        
-        // Passiamo a Python il ticker esatto (es. UCB.BR) per non farlo mai sbagliare
         fetch("http://127.0.0.1:5000/execute", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ command: "finance_data", ticker: action.ticker }) })
         .then(res => res.json())
         .then(async localData => {
             if (localData.status === "success") {
-                const promptText = `Azienda: ${action.company}. Ticker Yahoo trovato: ${localData.ticker}. Dati recuperati: ${JSON.stringify(localData.data)}`;
-                
+                const promptText = `Azienda: ${action.company}. Ticker: ${localData.ticker}. Dati: ${JSON.stringify(localData.data)}`;
                 const res2 = await fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: promptText, isDirectAnalysis: true }) });
                 const finalData = await res2.json();
                 
                 speak(finalData.text);
                 const div = document.createElement("div"); div.textContent = finalData.text; div.style.color = "var(--cyan-bright)"; div.style.marginTop = "10px"; div.style.borderLeft = "2px solid var(--cyan)"; div.style.paddingLeft = "8px"; elements.readoutJarvis.appendChild(div); elements.readout.scrollTop = elements.readout.scrollHeight;
                 
-                // Creazione Link EURONEXT per TradingView
                 const tvSymbol = getTVSymbolForURL(localData.ticker);
                 const tvUrl = "https://www.tradingview.com/symbols/" + tvSymbol + "/";
                 window.open(tvUrl, "_blank", "noopener");
             } else {
-                speak("Signore, c'è stato un problema nel download del bilancio tramite Python.");
+                speak("Signore, c'è stato un problema nel download del bilancio.");
             }
         }).catch(err => showBanner("Server Python locale offline. Impossibile scaricare i dati.", true));
         return true;
@@ -383,38 +374,64 @@
         const data = await res.json(); if (!res.ok) throw new Error(data.error || "Errore Server");
         elements.latencyValue.textContent = `${Math.round(performance.now() - start)} MS`; elements.deepseekState.textContent = "OK";
         showReadout(q, data.text, data.action, data.market, preparedWindow);
-        elements.interimTranscript.textContent = "Risposta pronta."; await speak(data.text);
+        await speak(data.text);
       } catch (err) {
         if (preparedWindow) try { preparedWindow.close(); } catch {}
         elements.deepseekState.textContent = "ERRORE"; const msg = "Errore di connessione al server."; showReadout(q, msg, null, null, null); showBanner(msg, true); await speakWithBrowser(msg);
       }
     }
 
-    function resumeRecognitionAfterSpeech() { recognitionSuspended = false; if (voiceEnabled) { setMode("awake"); elements.interimTranscript.textContent = "Pronuncia “Ehi Jarvis” seguito dal comando."; window.setTimeout(startRecognitionEngine, 450); } else setMode("off"); }
+    function resumeRecognitionAfterSpeech() { 
+      if (mode === "speaking") {
+        recognitionSuspended = false; 
+        if (voiceEnabled) { 
+          setMode("awake"); 
+          elements.interimTranscript.textContent = "Pronuncia “Ehi Jarvis” seguito dal comando."; 
+          window.setTimeout(startRecognitionEngine, 450); 
+        } else {
+          setMode("off"); 
+        }
+      }
+    }
 
     function speakWithBrowser(text) {
       return new Promise(res => {
         if (muted || !("speechSynthesis" in window)) { resumeRecognitionAfterSpeech(); return res(); }
-        window.speechSynthesis.cancel(); 
+        stopSpeaking();
         const spokenText = cleanMathSymbols(text);
-        const u = new SpeechSynthesisUtterance(spokenText); u.lang = "it-IT"; u.rate = 1.05;
+        
+        // VELOCITÀ AUMENTATA QUI
+        const u = new SpeechSynthesisUtterance(spokenText); u.lang = "it-IT"; u.rate = 1.22;
+        
         if (!cachedVoice) cachedVoice = window.speechSynthesis.getVoices().find(v => v.lang.includes("it") && (v.name.includes("Elsa") || v.name.includes("Female")));
         if (cachedVoice) u.voice = cachedVoice;
-        u.onend = u.onerror = () => { resumeRecognitionAfterSpeech(); res(); }; setMode("speaking"); window.speechSynthesis.speak(u);
+        u.onend = u.onerror = () => { resumeRecognitionAfterSpeech(); res(); }; 
+        setMode("speaking"); 
+        
+        // Mantieni microfono attivo durante la lettura per l'interruzione
+        recognitionSuspended = false; 
+        if (voiceEnabled && !recognitionRunning) startRecognitionEngine();
+        
+        window.speechSynthesis.speak(u);
       });
     }
 
     async function speak(text) {
       if (muted) return resumeRecognitionAfterSpeech();
-      if (currentSpeechAudio) { try { currentSpeechAudio.pause(); } catch {} currentSpeechAudio = null; }
+      stopSpeaking();
       setMode("speaking");
       
-      const spokenText = cleanMathSymbols(text);
+      // Mantieni microfono attivo durante la lettura per l'interruzione
+      recognitionSuspended = false; 
+      if (voiceEnabled && !recognitionRunning) startRecognitionEngine();
       
+      const spokenText = cleanMathSymbols(text);
       try {
         const res = await fetch(WORKER_URL + "/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: spokenText }) });
-        if (!res.ok) throw new Error("TTS non disponibile"); const blob = await res.blob(); currentSpeechUrl = URL.createObjectURL(blob); currentSpeechAudio = new Audio(currentSpeechUrl);
-        currentSpeechAudio.onend = currentSpeechAudio.onerror = () => { resumeRecognitionAfterSpeech(); }; await currentSpeechAudio.play(); currentSpeechAudio.addEventListener("ended", resumeRecognitionAfterSpeech);
+        if (!res.ok) throw new Error("TTS non disponibile"); 
+        const blob = await res.blob(); currentSpeechUrl = URL.createObjectURL(blob); currentSpeechAudio = new Audio(currentSpeechUrl);
+        currentSpeechAudio.onend = currentSpeechAudio.onerror = () => { resumeRecognitionAfterSpeech(); }; 
+        await currentSpeechAudio.play(); 
       } catch { await speakWithBrowser(spokenText); }
     }
 
