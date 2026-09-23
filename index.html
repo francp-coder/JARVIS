@@ -64,7 +64,7 @@
     <header class="top-navigation">
       <div class="brand-group"><div class="brand-mark">JS</div><div class="brand-copy"><h1>J.A.R.V.I.S.</h1><p>Just A Rather Very Intelligent System</p></div></div>
       <nav class="system-tabs"><span class="active">Sintesi</span><span>CPU</span><span>Rete</span><span>Comandi</span></nav>
-      <div class="identity-panel"><div class="identity-avatar"></div><div><div class="identity-title">JARVIS OS · VER 5.1</div><div class="identity-line">UTENTE: <span id="userName">FRANCESCO</span></div><div id="systemClock" class="identity-clock">--:--:--</div></div></div>
+      <div class="identity-panel"><div class="identity-avatar"></div><div><div class="identity-title">JARVIS OS · VER 6.0</div><div class="identity-line">UTENTE: <span id="userName">FRANCESCO</span></div><div id="systemClock" class="identity-clock">--:--:--</div></div></div>
     </header>
 
     <section class="cockpit">
@@ -89,7 +89,7 @@
 
     <section class="command-deck">
       <section class="voice-controls">
-        <div class="deck-title">Controllo voce</div><div class="main-controls"><button id="voiceToggleButton" class="hud-button primary" type="button">Attiva voce</button><button id="muteButton" class="hud-button" type="button">Silenzia risposta</button></div><div class="voice-help">Pronuncia: “Ehi Jarvis, analizza EBR: UCB”</div>
+        <div class="deck-title">Controllo voce</div><div class="main-controls"><button id="voiceToggleButton" class="hud-button primary" type="button">Attiva voce</button><button id="muteButton" class="hud-button" type="button">Silenzia risposta</button></div><div class="voice-help">Pronuncia: “Ehi Jarvis, analizza UCB”</div>
       </section>
       <section class="communication-panel">
         <div class="panel-header"><span>Terminale comunicazioni</span><span class="panel-indicator"></span></div>
@@ -259,13 +259,14 @@
     }
 
     // ============================================================
-    // TRADINGVIEW URL MAPPER (MAPPATURA CORRETTA EURONEXT)
+    // TRADINGVIEW URL MAPPER (LA REGOLA EURONEXT ASSOLUTA)
     // ============================================================
     function getTVSymbolForURL(yahooTicker) {
       if (!yahooTicker) return ""; 
       let tv = yahooTicker.toUpperCase().trim().replace(/\s+/g, '');
       
-      // RISOLUZIONE DEFINITIVA: EURONEXT per Bruxelles (.BR), Parigi (.PA), Amsterdam (.AS), Lisbona (.LS)
+      // REGOLA INFALLIBILE: Tutto il circuito EURONEXT (Belgio, Francia, Olanda, Portogallo) 
+      // richiede espressamente il prefisso "EURONEXT-" in TradingView.
       if (tv.endsWith(".BR") || tv.endsWith(".PA") || tv.endsWith(".AS") || tv.endsWith(".LS")) {
          return "EURONEXT-" + tv.split(".")[0];
       }
@@ -276,20 +277,11 @@
       if (tv.endsWith("-USD")) return "CRYPTO-" + tv.replace("-USD", ""); 
       if (tv.startsWith("^")) return tv.replace("^", ""); 
       
-      // Gestione diretta per l'input parlato (es. EBR:UCB -> EURONEXT-UCB)
-      if (tv.startsWith("EBR:") || tv.startsWith("EPA:") || tv.startsWith("AMS:") || tv.startsWith("ELI:")) {
-         return "EURONEXT-" + tv.split(":")[1];
-      }
-      if (tv.startsWith("BIT:") || tv.startsWith("MIL:")) {
-         return "MIL-" + tv.split(":")[1];
-      }
-      
-      if (tv.includes(":")) return tv.replace(":", "-");
       return tv; 
     }
 
     // ============================================================
-    // PULIZIA FINALE: STERMINIO DEL LATEX E DELLE TABELLE
+    // PULIZIA FINALE: STERMINIO DEL LATEX
     // ============================================================
     function cleanMathSymbols(text) {
       if (!text) return "";
@@ -307,9 +299,9 @@
         .replace(/\\ln/g, "logaritmo naturale di ")
         .replace(/\\e\^/g, "e elevato alla ")
         .replace(/\\delta/g, "delta")
-        .replace(/[\*\_\$\#\\]/g, "") // Rimuove residui vari
-        .replace(/\{|\}/g, "") // Rimuove le parentesi graffe
-        .replace(/\|[^|]+\|/g, "") // Elimina le tabelle
+        .replace(/[\*\_\$\#\\]/g, "") 
+        .replace(/\{|\}/g, "") 
+        .replace(/\|[^|]+\|/g, "") 
         .replace(/\s+/g, " ")
         .trim();
     }
@@ -336,6 +328,7 @@
         elements.lastActionValue.textContent = "SCANSIONE FINANZA";
         if (preparedWindow && !preparedWindow.closed) try { preparedWindow.close(); } catch {}
         
+        // Passiamo a Python il ticker esatto (es. UCB.BR) per non farlo mai sbagliare
         fetch("http://127.0.0.1:5000/execute", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ command: "finance_data", ticker: action.ticker }) })
         .then(res => res.json())
         .then(async localData => {
@@ -348,6 +341,7 @@
                 speak(finalData.text);
                 const div = document.createElement("div"); div.textContent = finalData.text; div.style.color = "var(--cyan-bright)"; div.style.marginTop = "10px"; div.style.borderLeft = "2px solid var(--cyan)"; div.style.paddingLeft = "8px"; elements.readoutJarvis.appendChild(div); elements.readout.scrollTop = elements.readout.scrollHeight;
                 
+                // Creazione Link EURONEXT per TradingView
                 const tvSymbol = getTVSymbolForURL(localData.ticker);
                 const tvUrl = "https://www.tradingview.com/symbols/" + tvSymbol + "/";
                 window.open(tvUrl, "_blank", "noopener");
